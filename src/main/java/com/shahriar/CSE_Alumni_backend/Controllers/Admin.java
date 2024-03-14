@@ -95,17 +95,4 @@ public class Admin {
         return new ResponseEntity<>("You are trying to logout without login...login as admin first", HttpStatus.BAD_REQUEST);
     }
 
-
-    @GetMapping("/alumnusList")
-    public ResponseEntity<?> alumnusList(@RequestParam("email") String email){
-
-
-        if(regService.trackFindByEmail(email).getStatus()==1)
-            return ResponseEntity.ok("Alumnus");
-        else if(regService.trackFindByEmail(email).getStatus()==2)
-            return ResponseEntity.ok("Password is incorrect...try properly...");
-
-        return ResponseEntity.status(401).body("Sorry..Access denied...plz log in first");
-    }
-
 }
