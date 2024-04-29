@@ -91,6 +91,8 @@ public class JobPostController {
         if (jobPost == null) {
             return new ResponseEntity<>("No such job post found", HttpStatus.NO_CONTENT);
         }
+
+        saveImagesInSystemForSpecificPost(jobPost);
         return new ResponseEntity<>(jobPost, HttpStatus.OK);
     }
 
@@ -133,6 +135,53 @@ public class JobPostController {
 
         String response = jobPostService.deleteJob(postId);
         return ResponseEntity.ok(response);
+    }
+
+    public void saveImagesInSystemForSpecificPost(JobPost jobPost) {
+
+
+            List<byte[]> images = jobPost.getDecodedImages(); // Assuming you have a method to get the images byte data
+            String jobFolder = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Images\\SpecificPost\\" + "Job_";
+
+
+            if (images != null) {
+
+                // Save images of each job into their respective folder
+                for (int i = 0; i < images.size(); i++) {
+                    byte[] imageData = images.get(i);
+                    String filePath = jobFolder + jobPost.getId() + "." + (i + 1) + ".jpg";
+
+                    try (FileOutputStream fos = new FileOutputStream(filePath)) {
+
+                        fos.write(imageData);
+                    } catch (IOException e) {
+                        System.out.println("Error writing image file: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            }
+            List<Comment> allCommentOfAnyPost = jobPost.getComments();
+
+            if (allCommentOfAnyPost != null) {
+
+
+                for (Comment comment : allCommentOfAnyPost) {
+
+                    if (comment.getResume() != null) {
+
+                        byte[] byteDataFromPostman = comment.getDecodedResume();
+
+                        String filePath = jobFolder + jobPost.getId() + "." + comment.getId() + ".pdf";
+
+                        try (FileOutputStream fos = new FileOutputStream(filePath)) {
+                            fos.write(byteDataFromPostman);
+                        } catch (IOException e) {
+                            System.out.println("Error writing PDF file: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
     }
 
 

@@ -25,6 +25,9 @@ public class CommentController {
     private CommentService commentService;
 
     @Autowired
+    private JobPostService jobPostService;
+
+    @Autowired
     private RegService regService;
 
     @PostMapping("/comment/{userEmail}/{jobId}")
@@ -59,6 +62,29 @@ public class CommentController {
         saveFetchedResumes(allCommentOfAnyPost, jobId);
 
         return new ResponseEntity<>(allCommentOfAnyPost, HttpStatus.OK);
+    }
+
+
+
+    @PutMapping("/update/comment/{jobId}/{commentId}")
+    public ResponseEntity<?> updateComment(
+            @PathVariable Long jobId,
+            @PathVariable Long commentId,
+            @RequestParam("userEmail") String user,
+            @RequestParam(value = "commentText", required = false) String textContent,
+            @RequestParam(value = "resume" ,required = false) MultipartFile resume
+    ){
+
+        if(regService.returnUserStatus(user)!=1)
+            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
+
+        if (!commentService.verificationPostCreator(commentId, user)) {
+            return new ResponseEntity<>("You aren't owner of this comment or this comment doesn't exist", HttpStatus.UNAUTHORIZED);
+        }
+
+        String response = commentService.updateCommentToJob(jobId,commentId,textContent, resume);
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     public void saveFetchedResumes(List<Comment> allCommentOfAnyPost, Long jobId){

@@ -34,162 +34,7 @@ public class CommentService {
 
 
     @Autowired
-    private JobPostInterface jobPostInterface = new JobPostInterface() {
-        @Override
-        public List<JobPost> findByUserEmail(String userEmail) {
-            return null;
-        }
-
-        @Override
-        public void flush() {
-
-        }
-
-        @Override
-        public <S extends JobPost> S saveAndFlush(S entity) {
-            return null;
-        }
-
-        @Override
-        public <S extends JobPost> List<S> saveAllAndFlush(Iterable<S> entities) {
-            return null;
-        }
-
-        @Override
-        public void deleteAllInBatch(Iterable<JobPost> entities) {
-
-        }
-
-        @Override
-        public void deleteAllByIdInBatch(Iterable<Long> longs) {
-
-        }
-
-        @Override
-        public void deleteAllInBatch() {
-
-        }
-
-        @Override
-        public JobPost getOne(Long aLong) {
-            return null;
-        }
-
-        @Override
-        public JobPost getById(Long aLong) {
-            return null;
-        }
-
-        @Override
-        public JobPost getReferenceById(Long aLong) {
-            return null;
-        }
-
-        @Override
-        public <S extends JobPost> List<S> findAll(Example<S> example) {
-            return null;
-        }
-
-        @Override
-        public <S extends JobPost> List<S> findAll(Example<S> example, Sort sort) {
-            return null;
-        }
-
-        @Override
-        public <S extends JobPost> List<S> saveAll(Iterable<S> entities) {
-            return null;
-        }
-
-        @Override
-        public List<JobPost> findAll() {
-            return null;
-        }
-
-        @Override
-        public List<JobPost> findAllById(Iterable<Long> longs) {
-            return null;
-        }
-
-        @Override
-        public <S extends JobPost> S save(S entity) {
-            return null;
-        }
-
-        @Override
-        public Optional<JobPost> findById(Long aLong) {
-            return Optional.empty();
-        }
-
-        @Override
-        public boolean existsById(Long aLong) {
-            return false;
-        }
-
-        @Override
-        public long count() {
-            return 0;
-        }
-
-        @Override
-        public void deleteById(Long aLong) {
-
-        }
-
-        @Override
-        public void delete(JobPost entity) {
-
-        }
-
-        @Override
-        public void deleteAllById(Iterable<? extends Long> longs) {
-
-        }
-
-        @Override
-        public void deleteAll(Iterable<? extends JobPost> entities) {
-
-        }
-
-        @Override
-        public void deleteAll() {
-
-        }
-
-        @Override
-        public List<JobPost> findAll(Sort sort) {
-            return null;
-        }
-
-        @Override
-        public Page<JobPost> findAll(Pageable pageable) {
-            return null;
-        }
-
-        @Override
-        public <S extends JobPost> Optional<S> findOne(Example<S> example) {
-            return Optional.empty();
-        }
-
-        @Override
-        public <S extends JobPost> Page<S> findAll(Example<S> example, Pageable pageable) {
-            return null;
-        }
-
-        @Override
-        public <S extends JobPost> long count(Example<S> example) {
-            return 0;
-        }
-
-        @Override
-        public <S extends JobPost> boolean exists(Example<S> example) {
-            return false;
-        }
-
-        @Override
-        public <S extends JobPost, R> R findBy(Example<S> example, Function<FluentQuery.FetchableFluentQuery<S>, R> queryFunction) {
-            return null;
-        }
-    };
+    private JobPostInterface jobPostInterface;
 
     @Autowired
     private CommentInterface commentInterface;
@@ -230,9 +75,9 @@ public class CommentService {
 
         try {
 
-            String encodedResume=null;
+            String encodedResume = null;
 
-            if(!resume.isEmpty()){
+            if (!resume.isEmpty()) {
 
                 File file = convertMultiPartToFile(resume);
 
@@ -243,7 +88,7 @@ public class CommentService {
 
             Optional<JobPost> jobPostOptional = jobPostInterface.findById(jobId);
 
-            if(jobPostOptional.isPresent()){
+            if (jobPostOptional.isPresent()) {
 
                 JobPost jobPost = jobPostOptional.get();
 
@@ -257,10 +102,9 @@ public class CommentService {
 
                         .build();
 
-                if(jobPost.getComments()!=null){
+                if (jobPost.getComments() != null) {
                     jobPost.getComments().add(comment);
-                }
-                else{
+                } else {
                     List<Comment> commentListToAdd = new ArrayList<>();
                     commentListToAdd.add(comment);
                     jobPost.setComments(commentListToAdd);
@@ -269,71 +113,134 @@ public class CommentService {
                 commentInterface.save(comment);
 
                 return "Comment is added successfully...";
-            }
-            else{
+            } else {
                 return "No such job post exists";
             }
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return "Error adding comment";
         }
     }
 
 
+    public String updateCommentToJob(Long jobId, Long commentId, String textContent, MultipartFile resume) {
 
-    public List<Comment> findAllCommentOfAnySpecificPost(Long jobId) throws IOException {
+        try {
 
-        List<Comment> comments = null;
-         byte[] decompressedResume=null;
+            String encodedResume = null;
 
-        if(jobPostInterface.findById(jobId)!=null){
+            if (!resume.isEmpty()) {
+
+                File file = convertMultiPartToFile(resume);
+
+                byte[] compressedResume = compressFile(file);
+
+                encodedResume = Base64.getEncoder().encodeToString(compressedResume);
+            }
+
+            Optional<Comment> commentOptional = commentInterface.findById(commentId);
+            Comment comment = commentOptional.get();
+
+            String textContent1;
+            if (textContent == null)
+                textContent1 = commentOptional.get().textContent;
+            else
+                textContent1 = textContent;
 
             JobPost jobPost = jobPostInterface.findById(jobId).get();
 
-            comments = jobPost.getComments();
 
-            if(comments!=null){
+            if (jobPost!=null) {
 
-                for(Comment comment: comments){
+                if (comment!=null) {
 
-                    if(comment.getResume()!=null){
+                  if(textContent1!=null)
+                      comment.setTextContent(textContent1);
+                  if(resume!=null)
+                      comment.setResume(encodedResume);
 
-                        String encodedResume = comment.getResume();
-                        byte[] decodedResume = Base64.getDecoder().decode(encodedResume);
-                        decompressedResume = decompress(decodedResume);
+                    commentInterface.save(comment);
 
-                        comment.setDecodedResume(decompressedResume);
-                    }
-                    else{
-                       comment.setDecodedResume(null);
-                    }
+                    return "Comment is updated successfully...";
                 }
+                else
+                    return "No such comment exists";
             }
-            else{
+            else
+                return "No such job post exists";
+        }
+        catch(Exception e){
+                e.printStackTrace();
+                return "Error adding comment";
+            }
+    }
+
+        public List<Comment> findAllCommentOfAnySpecificPost (Long jobId) throws IOException {
+
+            List<Comment> comments = null;
+            byte[] decompressedResume = null;
+
+            if (jobPostInterface.findById(jobId) != null) {
+
+                JobPost jobPost = jobPostInterface.findById(jobId).get();
+
+                comments = jobPost.getComments();
+
+                if (comments != null) {
+
+                    for (Comment comment : comments) {
+
+                        if (comment.getResume() != null) {
+
+                            String encodedResume = comment.getResume();
+                            byte[] decodedResume = Base64.getDecoder().decode(encodedResume);
+                            decompressedResume = decompress(decodedResume);
+
+                            comment.setDecodedResume(decompressedResume);
+                        } else {
+                            comment.setDecodedResume(null);
+                        }
+                    }
+                } else {
+                    return null;
+                }
+            } else {
                 return null;
             }
-        }
-        else{
-            return null;
+
+            return comments;
         }
 
-        return comments;
-    }
 
-    public byte[] decompress(byte[] compressedBytes) throws IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(compressedBytes))) {
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                byte[] buffer = new byte[1024];
-                int length;
-                while ((length = zis.read(buffer)) > 0) {
-                    bos.write(buffer, 0, length);
+        public boolean verificationPostCreator (Long commentId, String userEmail){
+
+
+            Optional<Comment> commentOptional = commentInterface.findById(commentId);
+
+            if (!commentOptional.isPresent())
+                return false;
+
+            Comment specificComment = commentOptional.get();
+
+            if (userEmail.equals(specificComment.getCommenter()))
+                return true;
+
+            return false;
+        }
+
+        public byte[] decompress ( byte[] compressedBytes) throws IOException {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(compressedBytes))) {
+                ZipEntry entry;
+                while ((entry = zis.getNextEntry()) != null) {
+                    byte[] buffer = new byte[1024];
+                    int length;
+                    while ((length = zis.read(buffer)) > 0) {
+                        bos.write(buffer, 0, length);
+                    }
                 }
             }
+            return bos.toByteArray(); // Assuming the resume is in string format
         }
-        return bos.toByteArray(); // Assuming the resume is in string format
     }
-}

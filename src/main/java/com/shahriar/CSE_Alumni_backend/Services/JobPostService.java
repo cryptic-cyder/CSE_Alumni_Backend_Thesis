@@ -309,7 +309,6 @@ public class JobPostService {
                 return "Error!!! Job post with ID " + postId + " not found";
             }
 
-
             jobPostInterface.deleteById(postId);
 
             return "Job post with ID " + postId + " deleted successfully";
