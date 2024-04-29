@@ -1,6 +1,8 @@
 package com.shahriar.CSE_Alumni_backend.Entities;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,7 +30,7 @@ public class JobPost {
 
     private LocalDateTime postedAt;
 
-    @Transient // This annotation indicates that the field should not be persisted to the database
+
     private List<byte[]> decodedImages;
 
     @Lob
@@ -36,6 +38,7 @@ public class JobPost {
     private List<String> images = new ArrayList<>();
 
     @OneToMany(mappedBy = "jobPost", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Comment> comments = new ArrayList<>();
 
 

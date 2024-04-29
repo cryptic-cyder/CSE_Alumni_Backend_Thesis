@@ -22,18 +22,22 @@ public class Comment {
 
     private String commenter;
 
+
     @Column(columnDefinition = "TEXT")
     public String textContent; // Text content of the comment
 
-    private String encodedResume;
+    @Lob
+    @Column(length=1000000000)
+    private String resume;
+
+    @Lob
+    @Column(length = 1000000000)
+    private byte[] decodedResume;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_id", nullable = false)
     public JobPost jobPost;
 
-    @Lob
-    @Column(length = 10000000)
-    public byte[] decodedResume;
 
 
 
@@ -41,20 +45,26 @@ public class Comment {
 
 
 
-    public Comment() {
 
+
+
+
+    public byte[] getDecodedResume() {
+        return decodedResume;
     }
 
-    public Comment(Long id, LocalDateTime commentedAt, String commenter, String textContent, String encodedResume, JobPost jobPost, byte[] decodedResume) {
-        this.id = id;
-        this.commentedAt = commentedAt;
-        this.commenter = commenter;
-        this.textContent = textContent;
-        this.encodedResume = encodedResume;
-        this.jobPost = jobPost;
+    public void setDecodedResume(byte[] decodedResume) {
         this.decodedResume = decodedResume;
     }
 
+
+    public String getResume() {
+        return resume;
+    }
+
+    public void setResume(String resume) {
+        this.resume = resume;
+    }
 
     public Long getId() {
         return id;
@@ -88,12 +98,15 @@ public class Comment {
         this.textContent = textContent;
     }
 
-    public String getEncodedResume() {
-        return encodedResume;
-    }
 
-    public void setEncodedResume(String encodedResume) {
-        this.encodedResume = encodedResume;
+    public Comment(Long id, LocalDateTime commentedAt, String commenter, String textContent, String resume, byte[] decodedResume, JobPost jobPost) {
+        this.id = id;
+        this.commentedAt = commentedAt;
+        this.commenter = commenter;
+        this.textContent = textContent;
+        this.resume = resume;
+        this.decodedResume = decodedResume;
+        this.jobPost = jobPost;
     }
 
     public JobPost getJobPost() {
@@ -104,25 +117,10 @@ public class Comment {
         this.jobPost = jobPost;
     }
 
-    public byte[] getDecodedResume() {
-        return decodedResume;
+
+
+
+    public Comment() {
     }
-
-    public void setDecodedResume(byte[] decodedResume) {
-        this.decodedResume = decodedResume;
-    }
-
-
-    /*public static Comment createComment(String textContent, MultipartFile resume, JobPost jobPost) throws IOException {
-
-        byte[] resumeBytes = null;
-
-        if (resume != null) {
-            resumeBytes = resume.getBytes();
-        }
-        LocalDateTime commentedAt = LocalDateTime.now();
-
-        return new Comment(null, textContent, resumeBytes, commentedAt, jobPost);
-    }*/
 
 }
