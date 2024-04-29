@@ -2,8 +2,8 @@ package com.shahriar.CSE_Alumni_backend.Controllers;
 
 import com.shahriar.CSE_Alumni_backend.Entities.Comment;
 import com.shahriar.CSE_Alumni_backend.Entities.JobPost;
-import com.shahriar.CSE_Alumni_backend.Entities.JobPostDTO;
-import com.shahriar.CSE_Alumni_backend.Services.JobPostService;
+
+import com.shahriar.CSE_Alumni_backend.Services.CommentService;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,7 @@ import java.util.List;
 public class JobPostController {
 
     @Autowired
-    private JobPostService jobPostService;
+    private com.shahriar.CSE_Alumni_backend.Services.JobPostService jobPostService;
 
     @Autowired
     private RegService regService;
@@ -47,7 +47,7 @@ public class JobPostController {
 
     //GET methods
     @GetMapping("/fetch/allJobPost/{userEmail}")
-    public ResponseEntity<?> fetchAllJobPost(@PathVariable String userEmail){
+    public ResponseEntity<?> fetchAllJobPost(@PathVariable String userEmail) throws IOException {
 
         if (regService.returnUserStatus(userEmail) != 1)
             return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
@@ -55,7 +55,7 @@ public class JobPostController {
 
         List<JobPost> allJobPost = jobPostService.getAllJobPost();
 
-        if(allJobPost==null)
+        if (allJobPost == null)
             return new ResponseEntity<>("No post yet...Site has just developed", HttpStatus.OK);
 
 
@@ -67,7 +67,7 @@ public class JobPostController {
 
 
     @GetMapping("/fetch/allJobPostOfAnyUser/{userEmail}")
-    public ResponseEntity<?> fetchAllPostOfAnyUser(@PathVariable String userEmail){
+    public ResponseEntity<?> fetchAllPostOfAnyUser(@PathVariable String userEmail) throws IOException {
 
         if (regService.returnUserStatus(userEmail) != 1)
             return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
@@ -75,22 +75,24 @@ public class JobPostController {
 
         List<JobPost> allJobPostOfAnyUser = jobPostService.findAllPostOfAnyUser(userEmail);
 
-        if(allJobPostOfAnyUser==null)
-            return new ResponseEntity<>("No post of this user : "+userEmail, HttpStatus.OK);
+        if (allJobPostOfAnyUser == null)
+            return new ResponseEntity<>("No post of this user : " + userEmail, HttpStatus.OK);
+
+        saveImagesAndResumesOfAnyUser(allJobPostOfAnyUser, userEmail);
 
         return new ResponseEntity<>(allJobPostOfAnyUser, HttpStatus.OK);
     }
 
     @GetMapping("/fetch/anyParticularJob/{jobId}")
-    public ResponseEntity<?> fetchAnyParticularJob(@PathVariable Long jobId){
+    public ResponseEntity<?> fetchAnyParticularJob(@PathVariable Long jobId) throws IOException {
+
         JobPost jobPost = jobPostService.findAnySpecificJob(jobId);
 
-        if(jobPost == null){
+        if (jobPost == null) {
             return new ResponseEntity<>("No such job post found", HttpStatus.NO_CONTENT);
         }
         return new ResponseEntity<>(jobPost, HttpStatus.OK);
     }
-
 
 
     //PUT methods
@@ -106,8 +108,8 @@ public class JobPostController {
         if (regService.returnUserStatus(userEmail) != 1)
             return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.UNAUTHORIZED);
 
-        if(jobPostService.verificationPostCreator(jobId, userEmail)==false){
-            return new ResponseEntity<>("You aren't owner of this post or the post doesn't exist",HttpStatus.UNAUTHORIZED);
+        if (!jobPostService.verificationPostCreator(jobId, userEmail)) {
+            return new ResponseEntity<>("You aren't owner of this post or the post doesn't exist", HttpStatus.UNAUTHORIZED);
         }
 
         String response = jobPostService.updateJob(jobId, jobTitle, userEmail, jobDescription, jobImages);
@@ -125,8 +127,8 @@ public class JobPostController {
         if (regService.returnUserStatus(userEmail) != 1)
             return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.UNAUTHORIZED);
 
-        if(jobPostService.verificationPostCreator(postId, userEmail)==false){
-            return new ResponseEntity<>("You aren't owner of this post or the post doesn't exist",HttpStatus.UNAUTHORIZED);
+        if (!jobPostService.verificationPostCreator(postId, userEmail)) {
+            return new ResponseEntity<>("You aren't owner of this post or the post doesn't exist", HttpStatus.UNAUTHORIZED);
         }
 
         String response = jobPostService.deleteJob(postId);
@@ -134,39 +136,137 @@ public class JobPostController {
     }
 
 
-    public void saveImagesInSystem(List<JobPost> allJobPost){
+    public void saveImagesInSystem(List<JobPost> allJobPost) {
 
 
         for (JobPost jobPost : allJobPost) {
-            List<byte[]> images = jobPost.getDecodedImages(); // Assuming you have a method to get the images byte data
 
-            // Create a folder for each job
+            List<byte[]> images = jobPost.getDecodedImages(); // Assuming you have a method to get the images byte data
             String jobFolder = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Images\\" + "Job_" + jobPost.getId() + "\\";
+
             File folder = new File(jobFolder);
-            if (!folder.exists()) {
-                if (folder.mkdirs()) {
-                    System.out.println("Directory created successfully: " + jobFolder);
-                } else {
-                    System.out.println("Failed to create directory: " + jobFolder);
-                    // Handle the failure to create directory if needed
+
+            if (images != null) {
+
+                if (!folder.exists()) {
+
+                    if (!folder.mkdirs()) {
+                        System.out.println("Failed to create directory: " + jobFolder);
+                    }
+                }
+
+                // Save images of each job into their respective folder
+                for (int i = 0; i < images.size(); i++) {
+                    byte[] imageData = images.get(i);
+                    String filePath = jobFolder + jobPost.getId() + "." + (i + 1) + ".jpg";
+
+                    try (FileOutputStream fos = new FileOutputStream(filePath)) {
+
+                        fos.write(imageData);
+                    } catch (IOException e) {
+                        System.out.println("Error writing image file: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
+            List<Comment> allCommentOfAnyPost = jobPost.getComments();
 
-            // Save images of each job into their respective folder
-            for (int i = 0; i < images.size(); i++) {
-                byte[] imageData = images.get(i);
-                String filePath = jobFolder +jobPost.getId()+"."+ (i+1) + ".jpg";
+            if (allCommentOfAnyPost != null) {
 
-                try (FileOutputStream fos = new FileOutputStream(filePath)) {
-                    fos.write(imageData);
-                    System.out.println("Image file created successfully: " + filePath);
-                } catch (IOException e) {
-                    System.out.println("Error writing image file: " + e.getMessage());
-                    e.printStackTrace();
+
+                if (!folder.exists()) {
+
+                    if (!folder.mkdirs()) {
+                        System.out.println("Failed to create directory: " + jobFolder);
+                    }
+                }
+
+                for (Comment comment : allCommentOfAnyPost) {
+
+                    if (comment.getResume() != null) {
+
+                        byte[] byteDataFromPostman = comment.getDecodedResume();
+
+                        String filePath = jobFolder + jobPost.getId() + "." + comment.getId() + ".pdf";
+
+                        try (FileOutputStream fos = new FileOutputStream(filePath)) {
+                            fos.write(byteDataFromPostman);
+                        } catch (IOException e) {
+                            System.out.println("Error writing PDF file: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    }
                 }
             }
         }
+    }
 
+
+    public void saveImagesAndResumesOfAnyUser(List<JobPost> allJobPostOfAnyUser, String userEmail) {
+
+        String jobFolder = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Images\\" + userEmail + "\\";
+        File folder = new File(jobFolder);
+
+        for (JobPost jobPost : allJobPostOfAnyUser) {
+
+            List<byte[]> images = jobPost.getDecodedImages(); // Assuming you have a method to get the images byte data
+            List<Comment> allCommentOfAnyPost = jobPost.getComments();
+
+            if(images!=null) {
+
+                if (!folder.exists()) {
+
+                    if (!folder.mkdirs()) {
+                        System.out.println("Failed to create directory: " + jobFolder);
+                    }
+                }
+
+                // Save images of each job into their respective folder
+                for (int i = 0; i < images.size(); i++) {
+                    byte[] imageData = images.get(i);
+                    String filePath = jobFolder + jobPost.getId() + "." + (i + 1) + ".jpg";
+
+                    try (FileOutputStream fos = new FileOutputStream(filePath)) {
+
+                        fos.write(imageData);
+                    } catch (IOException e) {
+                        System.out.println("Error writing image file: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+
+
+
+            if (allCommentOfAnyPost != null) {
+
+                if (!folder.exists()) {
+
+                    if (!folder.mkdirs()) {
+                        System.out.println("Failed to create directory: " + jobFolder);
+                    }
+                }
+
+                for (Comment comment : allCommentOfAnyPost) {
+
+                    if (comment.getResume() != null) {
+
+                        byte[] byteDataFromPostman = comment.getDecodedResume();
+
+                        String filePath = jobFolder + jobPost.getId() + "." + comment.getId() + ".pdf";
+
+                        try (FileOutputStream fos = new FileOutputStream(filePath)) {
+                            fos.write(byteDataFromPostman);
+                        }
+                        catch (IOException e) {
+                            System.out.println("Error writing PDF file: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
     }
 
 }

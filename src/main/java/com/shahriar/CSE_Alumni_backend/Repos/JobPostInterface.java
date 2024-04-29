@@ -8,4 +8,5 @@ import java.util.List;
 public interface JobPostInterface extends JpaRepository<JobPost, Long> {
 
     List<JobPost> findByUserEmail(String userEmail);
+
 }

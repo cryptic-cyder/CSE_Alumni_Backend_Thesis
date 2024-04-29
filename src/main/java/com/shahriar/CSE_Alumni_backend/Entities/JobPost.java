@@ -37,7 +37,7 @@ public class JobPost {
     @Column(length = 1000000000)
     private List<String> images = new ArrayList<>();
 
-    @OneToMany(mappedBy = "jobPost", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "jobPost", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<Comment> comments = new ArrayList<>();
 

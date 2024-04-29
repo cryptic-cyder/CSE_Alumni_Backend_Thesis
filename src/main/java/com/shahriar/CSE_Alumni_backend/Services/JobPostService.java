@@ -1,15 +1,13 @@
 package com.shahriar.CSE_Alumni_backend.Services;
 
+
 import com.shahriar.CSE_Alumni_backend.Entities.*;
 import com.shahriar.CSE_Alumni_backend.Repos.CommentInterface;
 import com.shahriar.CSE_Alumni_backend.Repos.JobPostInterface;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import org.springframework.web.multipart.MultipartFile;
-
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -19,6 +17,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 @Service
 public class JobPostService {
@@ -26,47 +26,6 @@ public class JobPostService {
     @Autowired
     private JobPostInterface jobPostInterface;
 
-    /*public String postJob(String title, String userEmail, String description, List<MultipartFile> jobImagesList) {
-
-        try {
-
-            List<Images> imagesList = new ArrayList<>();
-
-            for(MultipartFile eachImage:jobImagesList){
-
-                byte[] imageData = (eachImage != null) ? eachImage.getBytes() : null;
-
-                JobPost jobPost = new JobPost();
-
-                Images images = Images.builder()
-                        .imageData(imageData)
-                        .build();
-
-                imagesList.add(images);
-            }
-
-            JobPost jobpost = JobPost.builder()
-
-                    .title(title)
-                    .userEmail(userEmail)
-                    .description(description)
-                    .images(imagesList)
-                    .postedAt(LocalDateTime.now())
-                    .build();
-
-            for (Images images : imagesList) {
-                images.setJobPostImage(jobpost);
-            }
-
-            JobPost saveJobPost = jobPostInterface.save(jobpost);
-
-            return (saveJobPost != null) ? "Job is posted successfully":
-                    "Error!!! Something went wrong... Job can not be posted...";
-        } catch (IOException e) {
-            e.printStackTrace(); // Log the exception
-            return "Error!!! Something went wrong while processing the request";
-        }
-    }*/
 
     public String postJob(String title, String userEmail, String description, List<MultipartFile> jobImagesData) {
 
@@ -149,8 +108,62 @@ public class JobPostService {
         return false;
     }
 
+    public byte[] decompress(byte[] compressedBytes) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(compressedBytes))) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = zis.read(buffer)) > 0) {
+                    bos.write(buffer, 0, length);
+                }
+            }
+        }
+        return bos.toByteArray(); // Assuming the resume is in string format
+    }
 
-    public List<JobPost> getAllJobPost() {
+    public List<Comment> findAllCommentOfAnySpecificPost(Long jobId) throws IOException {
+
+        List<Comment> comments = null;
+        byte[] decompressedResume=null;
+
+        if(jobPostInterface.findById(jobId)!=null){
+
+            JobPost jobPost = jobPostInterface.findById(jobId).get();
+
+            comments = jobPost.getComments();
+
+            if(comments!=null){
+
+                for(Comment comment: comments){
+
+                    if(comment.getResume()!=null){
+
+                        String encodedResume = comment.getResume();
+                        byte[] decodedResume = Base64.getDecoder().decode(encodedResume);
+                        decompressedResume = decompress(decodedResume);
+
+                        comment.setDecodedResume(decompressedResume);
+                    }
+                    else{
+                        comment.setDecodedResume(null);
+                    }
+                }
+            }
+            else{
+                return null;
+            }
+        }
+        else{
+            return null;
+        }
+
+        return comments;
+    }
+
+
+    public List<JobPost> getAllJobPost() throws IOException {
 
         // Access the images field containing Base64-encoded strings
         List<JobPost> postList = jobPostInterface.findAll();
@@ -166,36 +179,42 @@ public class JobPostService {
                     decodeImages(listOfBase64VersionOfEachImage) : null;
 
             eachPost.setDecodedImages(decodedImages);
+
+            List<Comment> commentsOfThisPost = findAllCommentOfAnySpecificPost(eachPost.getId());
+            eachPost.setComments(commentsOfThisPost);
         }
 
         return postList;
     }
 
-    public JobPost findAnySpecificJob(Long jobId) {
+    public JobPost findAnySpecificJob(Long jobId) throws IOException {
 
         Optional<JobPost> jobPostOptional = jobPostInterface.findById(jobId);
 
         if(jobPostOptional.isPresent()){
-             JobPost jobPost = jobPostOptional.get();
+            JobPost jobPost = jobPostOptional.get();
 
-             List<String> listOfBase64VersionOfEachImage = new ArrayList<>();
-             List<byte[]> decodedImages = new ArrayList<>();
+            List<String> listOfBase64VersionOfEachImage = new ArrayList<>();
+            List<byte[]> decodedImages = new ArrayList<>();
 
-             listOfBase64VersionOfEachImage = (jobPost.getImages()!=null) ? jobPost.getImages() : null;
+            listOfBase64VersionOfEachImage = (jobPost.getImages()!=null) ? jobPost.getImages() : null;
 
-             decodedImages = (listOfBase64VersionOfEachImage!=null) ?
+            decodedImages = (listOfBase64VersionOfEachImage!=null) ?
                     decodeImages(listOfBase64VersionOfEachImage) : null;
 
-             jobPost.setDecodedImages(decodedImages);
+            jobPost.setDecodedImages(decodedImages);
 
-             return jobPost;
+            List<Comment> comments = findAllCommentOfAnySpecificPost(jobId);
+            jobPost.setComments(comments);
+
+            return jobPost;
         }
 
         return null;
     }
 
 
-    public List<JobPost> findAllPostOfAnyUser(String userEmail) {
+    public List<JobPost> findAllPostOfAnyUser(String userEmail) throws IOException {
 
         List<JobPost> postListOfAnyUser = jobPostInterface.findByUserEmail(userEmail);
 
@@ -211,9 +230,13 @@ public class JobPostService {
             listOfBase64VersionOfEachImage = (eachPost.getImages()!=null) ? eachPost.getImages() : null;
 
             decodedImages = (listOfBase64VersionOfEachImage!=null) ?
-                                   decodeImages(listOfBase64VersionOfEachImage) : null;
+                    decodeImages(listOfBase64VersionOfEachImage) : null;
 
             eachPost.setDecodedImages(decodedImages);
+
+            List<Comment> comments = findAllCommentOfAnySpecificPost(eachPost.getId());
+            eachPost.setComments(comments);
+
 
         }
 

@@ -34,7 +34,7 @@ public class Comment {
     @Column(length = 1000000000)
     private byte[] decodedResume;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne()
     @JoinColumn(name = "job_id", nullable = false)
     public JobPost jobPost;
 
