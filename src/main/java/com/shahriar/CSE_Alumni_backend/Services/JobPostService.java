@@ -8,6 +8,8 @@ import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import javax.naming.directory.SearchResult;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,6 +28,20 @@ public class JobPostService {
     @Autowired
     private JobPostInterface jobPostInterface;
 
+    @Autowired
+    private CommentInterface commentInterface;
+
+    public List<JobPost> performSearch(String queryToBeSearched) {
+
+        // Perform search in posts and comments
+        List<JobPost> searchResults = jobPostInterface.findByDescriptionContaining(queryToBeSearched);
+        //List<Comment> comments = commentInterface.findByTextContaining(query);
+
+        //searchResults.addAll(comments.stream().map(comment -> new SearchResult(comment.getId(), "comment", comment.getText())).collect(Collectors.toList()));
+
+        return searchResults;
+    }
+
 
     public String postJob(String title, String userEmail, String description, List<MultipartFile> jobImagesData) {
 
@@ -34,8 +50,7 @@ public class JobPostService {
 
             if (jobImagesData == null) {
                 compressedImagesBase64 = null;
-            }
-            else {
+            } else {
                 for (MultipartFile eachImage : jobImagesData) {
                     if (eachImage != null && !eachImage.isEmpty()) {
 
@@ -126,36 +141,33 @@ public class JobPostService {
     public List<Comment> findAllCommentOfAnySpecificPost(Long jobId) throws IOException {
 
         List<Comment> comments = null;
-        byte[] decompressedResume=null;
+        byte[] decompressedResume = null;
 
-        if(jobPostInterface.findById(jobId)!=null){
+        if (jobPostInterface.findById(jobId) != null) {
 
             JobPost jobPost = jobPostInterface.findById(jobId).get();
 
             comments = jobPost.getComments();
 
-            if(comments!=null){
+            if (comments != null) {
 
-                for(Comment comment: comments){
+                for (Comment comment : comments) {
 
-                    if(comment.getResume()!=null){
+                    if (comment.getResume() != null) {
 
                         String encodedResume = comment.getResume();
                         byte[] decodedResume = Base64.getDecoder().decode(encodedResume);
                         decompressedResume = decompress(decodedResume);
 
                         comment.setDecodedResume(decompressedResume);
-                    }
-                    else{
+                    } else {
                         comment.setDecodedResume(null);
                     }
                 }
-            }
-            else{
+            } else {
                 return null;
             }
-        }
-        else{
+        } else {
             return null;
         }
 
@@ -173,9 +185,9 @@ public class JobPostService {
             List<String> listOfBase64VersionOfEachImage = new ArrayList<>();
             List<byte[]> decodedImages = new ArrayList<>();
 
-            listOfBase64VersionOfEachImage = (eachPost.getImages()!=null) ? eachPost.getImages() : null;
+            listOfBase64VersionOfEachImage = (eachPost.getImages() != null) ? eachPost.getImages() : null;
 
-            decodedImages = (listOfBase64VersionOfEachImage!=null) ?
+            decodedImages = (listOfBase64VersionOfEachImage != null) ?
                     decodeImages(listOfBase64VersionOfEachImage) : null;
 
             eachPost.setDecodedImages(decodedImages);
@@ -191,15 +203,15 @@ public class JobPostService {
 
         Optional<JobPost> jobPostOptional = jobPostInterface.findById(jobId);
 
-        if(jobPostOptional.isPresent()){
+        if (jobPostOptional.isPresent()) {
             JobPost jobPost = jobPostOptional.get();
 
             List<String> listOfBase64VersionOfEachImage = new ArrayList<>();
             List<byte[]> decodedImages = new ArrayList<>();
 
-            listOfBase64VersionOfEachImage = (jobPost.getImages()!=null) ? jobPost.getImages() : null;
+            listOfBase64VersionOfEachImage = (jobPost.getImages() != null) ? jobPost.getImages() : null;
 
-            decodedImages = (listOfBase64VersionOfEachImage!=null) ?
+            decodedImages = (listOfBase64VersionOfEachImage != null) ?
                     decodeImages(listOfBase64VersionOfEachImage) : null;
 
             jobPost.setDecodedImages(decodedImages);
@@ -227,9 +239,9 @@ public class JobPostService {
             List<String> listOfBase64VersionOfEachImage = new ArrayList<>();
             List<byte[]> decodedImages = new ArrayList<>();
 
-            listOfBase64VersionOfEachImage = (eachPost.getImages()!=null) ? eachPost.getImages() : null;
+            listOfBase64VersionOfEachImage = (eachPost.getImages() != null) ? eachPost.getImages() : null;
 
-            decodedImages = (listOfBase64VersionOfEachImage!=null) ?
+            decodedImages = (listOfBase64VersionOfEachImage != null) ?
                     decodeImages(listOfBase64VersionOfEachImage) : null;
 
             eachPost.setDecodedImages(decodedImages);

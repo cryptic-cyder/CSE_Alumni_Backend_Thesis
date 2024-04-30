@@ -176,6 +176,28 @@ public class CommentService {
             }
     }
 
+
+
+    public String deleteComment(Long commentId) {
+
+        try{
+            if(commentInterface.findById(commentId).isPresent()){
+
+                Comment comment = commentInterface.findById(commentId).get();
+
+                commentInterface.delete(comment);
+            }
+            else{
+                return "No such comment exists...";
+            }
+            return "Comment is successfully deleted...";
+        }
+        catch (Exception e){
+            return "Something went wrong while deleting the comment...";
+        }
+
+    }
+
         public List<Comment> findAllCommentOfAnySpecificPost (Long jobId) throws IOException {
 
             List<Comment> comments = null;
@@ -243,4 +265,4 @@ public class CommentService {
             }
             return bos.toByteArray(); // Assuming the resume is in string format
         }
-    }
+}

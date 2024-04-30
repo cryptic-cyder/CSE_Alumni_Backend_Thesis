@@ -35,14 +35,14 @@ public class CommentController {
             @PathVariable Long jobId,
             @PathVariable String userEmail,
             @RequestParam("commentText") String textContent,
-            @RequestParam(value = "resume" ,required = false) MultipartFile resume
+            @RequestParam(value = "resume", required = false) MultipartFile resume
     ) {
 
         if (regService.returnUserStatus(userEmail) != 1)
             return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
 
 
-        String response = commentService.addCommentToJob(jobId,userEmail, textContent, resume);
+        String response = commentService.addCommentToJob(jobId, userEmail, textContent, resume);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
@@ -55,7 +55,7 @@ public class CommentController {
 
         List<Comment> allCommentOfAnyPost = commentService.findAllCommentOfAnySpecificPost(jobId);
 
-        if(allCommentOfAnyPost==null)
+        if (allCommentOfAnyPost == null)
             return new ResponseEntity<>("No comment yet to this post", HttpStatus.OK);
 
 
@@ -65,44 +65,59 @@ public class CommentController {
     }
 
 
-
     @PutMapping("/update/comment/{jobId}/{commentId}")
     public ResponseEntity<?> updateComment(
             @PathVariable Long jobId,
             @PathVariable Long commentId,
             @RequestParam("userEmail") String user,
             @RequestParam(value = "commentText", required = false) String textContent,
-            @RequestParam(value = "resume" ,required = false) MultipartFile resume
-    ){
+            @RequestParam(value = "resume", required = false) MultipartFile resume
+    ) {
 
-        if(regService.returnUserStatus(user)!=1)
+        if (regService.returnUserStatus(user) != 1)
             return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
 
         if (!commentService.verificationPostCreator(commentId, user)) {
             return new ResponseEntity<>("You aren't owner of this comment or this comment doesn't exist", HttpStatus.UNAUTHORIZED);
         }
 
-        String response = commentService.updateCommentToJob(jobId,commentId,textContent, resume);
+        String response = commentService.updateCommentToJob(jobId, commentId, textContent, resume);
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    public void saveFetchedResumes(List<Comment> allCommentOfAnyPost, Long jobId){
+    @DeleteMapping("/delete/comment/{commentId}")
+    public ResponseEntity<?> deleteComment(
+            @PathVariable Long commentId,
+            @RequestParam("userEmail") String userEmail
+    ) {
+        if (regService.returnUserStatus(userEmail) != 1)
+            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
 
-        // Assuming byteDataFromPostman contains the byte data received from Postman
-        for(Comment comment: allCommentOfAnyPost){
+        if (!commentService.verificationPostCreator(commentId, userEmail)) {
+            return new ResponseEntity<>("You aren't owner of this comment or this comment doesn't exist", HttpStatus.UNAUTHORIZED);
+        }
 
-            if(comment.getResume()!=null){
+        String response = commentService.deleteComment(commentId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    public void saveFetchedResumes(List<Comment> allCommentOfAnyPost, Long jobId) {
+
+
+        for (Comment comment : allCommentOfAnyPost) {
+
+            if (comment.getResume() != null) {
 
                 byte[] byteDataFromPostman = comment.getDecodedResume();
 
-                String filePath = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Resumes\\"+jobId+"."+comment.getId()+".pdf";
+                String filePath = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Resumes\\" + jobId + "." + comment.getId() + ".pdf";
 
                 try (FileOutputStream fos = new FileOutputStream(filePath)) {
                     fos.write(byteDataFromPostman);
                     System.out.println("PDF file created successfully.");
-                }
-                catch (IOException e) {
+                } catch (IOException e) {
                     System.out.println("Error writing PDF file: " + e.getMessage());
                     e.printStackTrace();
                 }

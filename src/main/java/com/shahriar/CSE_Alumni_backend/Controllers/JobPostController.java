@@ -27,6 +27,19 @@ public class JobPostController {
     @Autowired
     private RegService regService;
 
+
+    @GetMapping("/search")
+    public ResponseEntity<?> search(@RequestParam("searchContent") String query) {
+
+        List<JobPost> searchResults = jobPostService.performSearch(query);
+
+        if(searchResults==null){
+            return new ResponseEntity<>("No matching is found", HttpStatus.OK);
+        }
+
+        return ResponseEntity.ok().body(searchResults);
+    }
+
     //POST methods
     @PostMapping("/forPostingJob")
     public ResponseEntity<?> forPostingJob(
