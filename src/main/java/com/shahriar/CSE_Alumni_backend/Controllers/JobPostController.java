@@ -4,6 +4,7 @@ import com.shahriar.CSE_Alumni_backend.Entities.Comment;
 import com.shahriar.CSE_Alumni_backend.Entities.JobPost;
 
 import com.shahriar.CSE_Alumni_backend.Services.CommentService;
+import com.shahriar.CSE_Alumni_backend.Services.JobPostService;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,20 +23,22 @@ import java.util.List;
 public class JobPostController {
 
     @Autowired
-    private com.shahriar.CSE_Alumni_backend.Services.JobPostService jobPostService;
+    private JobPostService jobPostService;
 
     @Autowired
     private RegService regService;
 
 
     @GetMapping("/search")
-    public ResponseEntity<?> search(@RequestParam("searchContent") String query) {
+    public ResponseEntity<?> search(@RequestParam("searchContent") String query) throws IOException {
 
         List<JobPost> searchResults = jobPostService.performSearch(query);
 
-        if(searchResults==null){
+        if (searchResults == null) {
             return new ResponseEntity<>("No matching is found", HttpStatus.OK);
         }
+
+         saveSearchResults(searchResults);
 
         return ResponseEntity.ok().body(searchResults);
     }
@@ -153,48 +156,99 @@ public class JobPostController {
     public void saveImagesInSystemForSpecificPost(JobPost jobPost) {
 
 
-            List<byte[]> images = jobPost.getDecodedImages(); // Assuming you have a method to get the images byte data
-            String jobFolder = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Images\\SpecificPost\\" + "Job_";
+        List<byte[]> images = jobPost.getDecodedImages(); // Assuming you have a method to get the images byte data
+        String jobFolder = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Images\\SpecificPost\\" + "Job_";
 
+
+        if (images != null) {
+
+            // Save images of each job into their respective folder
+            for (int i = 0; i < images.size(); i++) {
+                byte[] imageData = images.get(i);
+                String filePath = jobFolder + jobPost.getId() + "." + (i + 1) + ".jpg";
+
+                try (FileOutputStream fos = new FileOutputStream(filePath)) {
+
+                    fos.write(imageData);
+                } catch (IOException e) {
+                    System.out.println("Error writing image file: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }
+        List<Comment> allCommentOfAnyPost = jobPost.getComments();
+
+        if (allCommentOfAnyPost != null) {
+
+
+            for (Comment comment : allCommentOfAnyPost) {
+
+                if (comment.getResume() != null) {
+
+                    byte[] byteDataFromPostman = comment.getDecodedResume();
+
+                    String filePath = jobFolder + jobPost.getId() + "." + comment.getId() + ".pdf";
+
+                    try (FileOutputStream fos = new FileOutputStream(filePath)) {
+                        fos.write(byteDataFromPostman);
+                    } catch (IOException e) {
+                        System.out.println("Error writing PDF file: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+    }
+
+    public void saveSearchResults(List<JobPost> jobPosts) {
+
+        String searchResultFolder = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Images\\SearchResults\\";
+
+        for (JobPost jobPost : jobPosts) {
+
+            List<byte[]> images = jobPost.getDecodedImages();
 
             if (images != null) {
 
-                // Save images of each job into their respective folder
                 for (int i = 0; i < images.size(); i++) {
+
                     byte[] imageData = images.get(i);
-                    String filePath = jobFolder + jobPost.getId() + "." + (i + 1) + ".jpg";
+                    String filePath = searchResultFolder + jobPost.getId() + "." + (i + 1) + ".jpg";
 
                     try (FileOutputStream fos = new FileOutputStream(filePath)) {
 
                         fos.write(imageData);
-                    } catch (IOException e) {
+                    }
+                    catch (IOException e) {
                         System.out.println("Error writing image file: " + e.getMessage());
                         e.printStackTrace();
                     }
                 }
             }
-            List<Comment> allCommentOfAnyPost = jobPost.getComments();
 
-            if (allCommentOfAnyPost != null) {
+            List<Comment> comments = jobPost.getComments();
 
+            if(comments!=null){
 
-                for (Comment comment : allCommentOfAnyPost) {
+                for (Comment comment : comments) {
 
                     if (comment.getResume() != null) {
 
                         byte[] byteDataFromPostman = comment.getDecodedResume();
 
-                        String filePath = jobFolder + jobPost.getId() + "." + comment.getId() + ".pdf";
+                        String filePath = searchResultFolder + jobPost.getId() + "." + comment.getId() + ".pdf";
 
                         try (FileOutputStream fos = new FileOutputStream(filePath)) {
                             fos.write(byteDataFromPostman);
-                        } catch (IOException e) {
+                        }
+                        catch (IOException e) {
                             System.out.println("Error writing PDF file: " + e.getMessage());
                             e.printStackTrace();
                         }
                     }
                 }
             }
+        }
     }
 
 
@@ -274,7 +328,7 @@ public class JobPostController {
             List<byte[]> images = jobPost.getDecodedImages(); // Assuming you have a method to get the images byte data
             List<Comment> allCommentOfAnyPost = jobPost.getComments();
 
-            if(images!=null) {
+            if (images != null) {
 
                 if (!folder.exists()) {
 
@@ -300,7 +354,6 @@ public class JobPostController {
             }
 
 
-
             if (allCommentOfAnyPost != null) {
 
                 if (!folder.exists()) {
@@ -320,8 +373,7 @@ public class JobPostController {
 
                         try (FileOutputStream fos = new FileOutputStream(filePath)) {
                             fos.write(byteDataFromPostman);
-                        }
-                        catch (IOException e) {
+                        } catch (IOException e) {
                             System.out.println("Error writing PDF file: " + e.getMessage());
                             e.printStackTrace();
                         }

@@ -31,13 +31,29 @@ public class JobPostService {
     @Autowired
     private CommentInterface commentInterface;
 
-    public List<JobPost> performSearch(String queryToBeSearched) {
+    public List<JobPost> performSearch(String queryToBeSearched) throws IOException {
 
         // Perform search in posts and comments
         List<JobPost> searchResults = jobPostInterface.findByDescriptionContaining(queryToBeSearched);
         //List<Comment> comments = commentInterface.findByTextContaining(query);
 
         //searchResults.addAll(comments.stream().map(comment -> new SearchResult(comment.getId(), "comment", comment.getText())).collect(Collectors.toList()));
+
+        for (JobPost eachPost : searchResults) {
+
+            List<String> listOfBase64VersionOfEachImage = new ArrayList<>();
+            List<byte[]> decodedImages = new ArrayList<>();
+
+            listOfBase64VersionOfEachImage = (eachPost.getImages() != null) ? eachPost.getImages() : null;
+
+            decodedImages = (listOfBase64VersionOfEachImage != null) ?
+                    decodeImages(listOfBase64VersionOfEachImage) : null;
+
+            eachPost.setDecodedImages(decodedImages);
+
+            List<Comment> commentsOfThisPost = findAllCommentOfAnySpecificPost(eachPost.getId());
+            eachPost.setComments(commentsOfThisPost);
+        }
 
         return searchResults;
     }
