@@ -5,7 +5,13 @@ import com.shahriar.CSE_Alumni_backend.Entities.UserDTO;
 import com.shahriar.CSE_Alumni_backend.Entities.UserStatus;
 import com.shahriar.CSE_Alumni_backend.Entities.UserTrack;
 import com.shahriar.CSE_Alumni_backend.Repos.RegRepoIF;
+import com.shahriar.CSE_Alumni_backend.Repos.UserDTOInterface;
 import com.shahriar.CSE_Alumni_backend.Repos.UsertrackRepo;
+
+import javax.mail.*;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +20,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
 
 import java.util.*;
@@ -24,6 +29,82 @@ public class RegService {
 
     @Autowired
     private RegRepoIF regRepoIF;
+
+    /*@Autowired
+    private UserDTOInterface userDTOInterface;
+
+    public void sendOTP(String recipientEmail, String otp) throws MessagingException {
+
+        // Configuration setting for email sending
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.port", "587");
+
+
+        /*
+        *  with this code, your application can establish a connection to the email server and send emails using the provided credentials. It's like saying, "Hey, email server,
+        * here's my email address and password. I'm allowed to send emails from this account, so please let me do that."
+         *so it is like verifying my application to allow to send email by using server like gmail server ???
+Exactly! You've got it. The getPasswordAuthentication() method is like your application presenting its
+* credentials (email address and password) to the email server (e.g., Gmail server) for verification. This
+* verification process ensures that your application is authorized to send emails on behalf of the specified
+* email account. Once the credentials are verified, your application is granted permission to send emails through
+* the email server. So, it's a crucial
+*  step in the process of establishing trust and authorization between your application and the email server.
+         *
+         *  */
+        /*Session session = Session.getInstance(props, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication("shahriarbadhon778@gmail.com", "46180312");
+            }
+        });
+
+        /*Imagine you have a template for writing letters. This template includes things like the sender's address,
+        the recipient's address, the subject, and the body of the letter. Whenever you want to write a new letter,
+         you start with this template.In Java, creating an email message is like creating a template for an email.
+          The Message object represents this template. But before you can use this template, you need to set it up
+          with some basic information, like the email server details and authentication. That's what the Session object
+          helps with. It's like setting up the letter-writing environment.So, when you write new MimeMessage(session),
+           you're essentially saying, "Java, I want to create a new template for an email message. And I want to use the
+           settings we prepared earlier (like the email server details) to set up this template."
+          Once you have this Message template, you can then fill in the specific details for each email you want to send,
+          like who it's from, who it's to, the subject, and the body of the email. But this line of code just creates the
+          blank template, ready for you to fill in the specific details later.*/
+
+        /*Message message = new MimeMessage(session);
+
+        message.setFrom(new InternetAddress("shahriarbadhon778@gmail.com"));
+        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail));
+        message.setSubject("OTP Verification");
+        message.setText("Your OTP for account verification is: " + otp);
+
+        Transport.send(message);
+
+
+
+        // Storing OTP
+
+        /*UserDTO user = new UserDTO();
+
+        user.setGmail(recipientEmail);
+        user.setOTP(otp);
+
+        userDTOInterface.save(user);*/
+    //}
+
+    /*public void verifyOTP(String gmail, String OTP){
+
+        UserDTO userDTO = userDTOInterface.findByGmail(gmail);
+
+        if(userDTO.getOTP().equals(OTP)){
+            // Create Account
+
+        }
+    }*/
+
 
     public String requestForAcc(String name, String email, String password, String role, MultipartFile profilePic,
                                 String studentId, MultipartFile studentIdCard,
@@ -62,13 +143,13 @@ public class RegService {
     public String updateAccount(String email, String name, String password, String role, MultipartFile profilePic,
                                 String studentId, MultipartFile studentIdCard,
                                 String graduationYear, MultipartFile pvc
-                                ){
+    ) {
         try {
 
-            Optional<Register> existingAccountOptional =regRepoIF.findByEmail(email);
+            Optional<Register> existingAccountOptional = regRepoIF.findByEmail(email);
             Register existingAccount = existingAccountOptional.get();
 
-            if(existingAccount==null)
+            if (existingAccount == null)
                 return "No Account found";
 
             byte[] studentIdCardBytes = studentIdCard != null ? studentIdCard.getBytes() : existingAccount.getStudentIdCardPic();
@@ -88,7 +169,7 @@ public class RegService {
 
             Register temp = regRepoIF.save(existingAccount);
 
-            return (temp!= null) ? "Account changes are saved: " + role :
+            return (temp != null) ? "Account changes are saved: " + role :
                     "Error!!! Something went wrong...";
         } catch (IOException e) {
             e.printStackTrace();
@@ -97,34 +178,34 @@ public class RegService {
 
     }
 
-    public String deleteAccount(String email){
+    public String deleteAccount(String email) {
 
         Register existingAcc = regRepoIF.findByEmail(email).get();
 
-        if(existingAcc==null)
+        if (existingAcc == null)
             return "No such account exists";
 
         regRepoIF.delete(existingAcc);
 
         UserTrack existingUserTrack = usertrackRepo.findByEmail(email);
 
-        if(existingUserTrack!=null)
+        if (existingUserTrack != null)
             usertrackRepo.delete(existingUserTrack);
 
         return "Your account is deleted successfully";
     }
 
 
-    public boolean isAccountExistsAlready(String email){
+    public boolean isAccountExistsAlready(String email) {
 
         return regRepoIF.existsByEmail(email);
     }
 
-    public int returnAdminStatus(){
+    public int returnAdminStatus() {
 
         UserTrack adminUserTrack = usertrackRepo.findByEmail("CUETCSE@admin.cuet.ac.bd");
 
-        if(adminUserTrack==null)
+        if (adminUserTrack == null)
             return -1;
 
         int adminStatus = adminUserTrack.getStatus();
@@ -132,11 +213,11 @@ public class RegService {
         return adminStatus;
     }
 
-    public int returnUserStatus(String email){
+    public int returnUserStatus(String email) {
 
         UserTrack userStatus = usertrackRepo.findByEmail(email);
 
-        if(userStatus==null)
+        if (userStatus == null)
             return -2;
 
         return userStatus.getStatus();
@@ -146,7 +227,7 @@ public class RegService {
 
         List<Register> existingRegister = regRepoIF.findByUserStatus(UserStatus.PENDING);
 
-        if(existingRegister.size()==0)
+        if (existingRegister.size() == 0)
             return new ArrayList<>();
 
         return existingRegister;
@@ -166,7 +247,7 @@ public class RegService {
             Register pendingAccFromDb = user.get();
             pendingAccFromDb.setUserStatus(UserStatus.APPROVED);
 
-            if(usertrackRepo.findByEmail(email)==null || !usertrackRepo.existsByEmail(email)){
+            if (usertrackRepo.findByEmail(email) == null || !usertrackRepo.existsByEmail(email)) {
                 UserTrack userTrack = UserTrack.builder()
                         .email(pendingAccFromDb.getEmail())
                         .status(3)
@@ -181,11 +262,11 @@ public class RegService {
         return new Register(); // Or throw an exception, return a specific response, etc.
     }
 
-    public Register rejectRegistration(String email){
+    public Register rejectRegistration(String email) {
 
         Optional<Register> user = regRepoIF.findByEmail(email);
 
-        if(user.isPresent()) {
+        if (user.isPresent()) {
             //System.out.println("Okkkk");
             Register pendingAccFromDb = user.get();
 
@@ -209,10 +290,10 @@ public class RegService {
 
         UserTrack userTrack = usertrackRepo.findByEmail(email);
 
-        if(userTrack==null || userTrack.getStatus()!=1)
+        if (userTrack == null || userTrack.getStatus() != 1)
             return new Register();
 
-        if(!dbDataOptional.isPresent())
+        if (!dbDataOptional.isPresent())
             return new Register();
 
         Register dbData = dbDataOptional.get();
@@ -255,44 +336,25 @@ public class RegService {
 
     }
 
-    public List<UserDTO> getAllAcceptedAccBasic() {
 
-        List<Register> userAllBasic = regRepoIF.findByUserStatus(UserStatus.APPROVED);
-
-        return userAllBasic.stream()
-                .map(user -> {
-                    UserDTO userDto = new UserDTO();
-
-                    userDto.setEmail(user.getEmail());
-                    userDto.setName(user.getName());
-                    userDto.setProfilePic(user.getProfilePic());
-                    userDto.setRole(user.getRole());
-
-                    return userDto;
-                })
-                .collect(Collectors.toList());
-    }
-
-
-    public List<Register> getAllRegisteredStudents(){
+    public List<Register> getAllRegisteredStudents() {
 
         List<Register> approvedAcc = regRepoIF.findByUserStatus(UserStatus.APPROVED);
 
-        if(approvedAcc.size()==0)
+        if (approvedAcc.size() == 0)
             return new ArrayList<>();
 
         return approvedAcc;
     }
 
 
-
     //private String currentlyLoggedInUserEmail=null;
 
-    public int login(String email, String password){
+    public int login(String email, String password) {
 
         Optional<Register> recordFromDBOptional = regRepoIF.findByEmail(email);
 
-        if(!recordFromDBOptional.isPresent())
+        if (!recordFromDBOptional.isPresent())
             return 0;
 
         Register recordFromDB = recordFromDBOptional.get();
@@ -300,9 +362,9 @@ public class RegService {
 
         String passwordFromDB = recordFromDB.getPassword();
 
-        if(recordFromDB.getUserStatus().equals(UserStatus.APPROVED) ){
+        if (recordFromDB.getUserStatus().equals(UserStatus.APPROVED)) {
 
-            if(password.equals(passwordFromDB)){
+            if (password.equals(passwordFromDB)) {
 
                 //currentlyLoggedInUserEmail = email;
                 userTrack.setStatus(1);
@@ -324,7 +386,7 @@ public class RegService {
     }
 
 
-    public void logout(String email){
+    public void logout(String email) {
 
         UserTrack userTrack = usertrackRepo.findByEmail(email);
         System.out.println(userTrack);
@@ -336,35 +398,34 @@ public class RegService {
     }
 
 
-    public UserTrack trackFindByEmail(String email){
+    public UserTrack trackFindByEmail(String email) {
         return usertrackRepo.findByEmail(email);
     }
 
 
-    public boolean adminLogin(String email, String password){
+    public boolean adminLogin(String email, String password) {
 
-           if(email.equals("CUETCSE@admin.cuet.ac.bd") && password.equals("1234")){
+        if (email.equals("CUETCSE@admin.cuet.ac.bd") && password.equals("1234")) {
 
-               if(!usertrackRepo.existsByEmail(email)){
-                   UserTrack AdminUserTrack = UserTrack.builder()
-                           .email(email)
-                           .status(1)
-                           .build();
+            if (!usertrackRepo.existsByEmail(email)) {
+                UserTrack AdminUserTrack = UserTrack.builder()
+                        .email(email)
+                        .status(1)
+                        .build();
 
-                   usertrackRepo.save(AdminUserTrack);
-               }
-               else{
-                   UserTrack adminUserTrack = usertrackRepo.findByEmail(email);
-                   adminUserTrack.setStatus(1);
-                   usertrackRepo.save(adminUserTrack);
-               }
+                usertrackRepo.save(AdminUserTrack);
+            } else {
+                UserTrack adminUserTrack = usertrackRepo.findByEmail(email);
+                adminUserTrack.setStatus(1);
+                usertrackRepo.save(adminUserTrack);
+            }
 
-               return true;
-           }
-          return false;
+            return true;
+        }
+        return false;
     }
 
-    public void adminLogout(String email){
+    public void adminLogout(String email) {
 
         UserTrack adminUserTrack = usertrackRepo.findByEmail("CUETCSE@admin.cuet.ac.bd");
 

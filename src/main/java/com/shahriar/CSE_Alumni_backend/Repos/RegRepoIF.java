@@ -1,7 +1,6 @@
 package com.shahriar.CSE_Alumni_backend.Repos;
 
 import com.shahriar.CSE_Alumni_backend.Entities.Register;
-import com.shahriar.CSE_Alumni_backend.Entities.UserDTO;
 import com.shahriar.CSE_Alumni_backend.Entities.UserStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 

@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
 
 @Entity
 @Data
@@ -34,7 +36,19 @@ public class Register {
     }
 
     public void setEmail(String email) {
-        this.email = email;
+        if(isValidEmail(email))
+            this.email = email;
+    }
+
+    public static boolean isValidEmail(String email) {
+        boolean isValid = true;
+        try {
+            InternetAddress internetAddress = new InternetAddress(email);
+            internetAddress.validate();
+        } catch (AddressException e) {
+            isValid = false;
+        }
+        return isValid;
     }
 
     public String getPassword() {
@@ -101,6 +115,10 @@ public class Register {
         this.PVCPic = PVCPic;
     }
 
+
+
+
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -108,6 +126,7 @@ public class Register {
 
     private String name;
     private String email;
+
     private String password;
     private String role;
 
