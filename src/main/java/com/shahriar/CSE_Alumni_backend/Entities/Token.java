@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -20,7 +22,7 @@ public class Token {
 
     private String token;
     private String email;
-    private String timeOut;
+    private LocalDateTime timeOut;
 
 
 
@@ -51,11 +53,11 @@ public class Token {
         this.email = email;
     }
 
-    public String getTimeOut() {
+    public LocalDateTime getTimeOut() {
         return timeOut;
     }
 
-    public void setTimeOut(String timeOut) {
+    public void setTimeOut(LocalDateTime timeOut) {
         this.timeOut = timeOut;
     }
 }

@@ -1,10 +1,8 @@
 package com.shahriar.CSE_Alumni_backend.Services;
 
-import com.shahriar.CSE_Alumni_backend.Entities.Register;
-import com.shahriar.CSE_Alumni_backend.Entities.UserDTO;
-import com.shahriar.CSE_Alumni_backend.Entities.UserStatus;
-import com.shahriar.CSE_Alumni_backend.Entities.UserTrack;
+import com.shahriar.CSE_Alumni_backend.Entities.*;
 import com.shahriar.CSE_Alumni_backend.Repos.RegRepoIF;
+import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
 import com.shahriar.CSE_Alumni_backend.Repos.UserDTOInterface;
 import com.shahriar.CSE_Alumni_backend.Repos.UsertrackRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.zip.DataFormatException;
 import java.util.*;
@@ -26,6 +25,19 @@ public class RegService {
 
     @Autowired
     private UserDTOInterface userDTOInterface;
+
+    @Autowired
+    private TokenInterface tokenInterface;
+
+    public void saveToken(String email, String token, LocalDateTime timeout) {
+
+        Token tokenEntity = new Token();
+        tokenEntity.setEmail(email);
+        tokenEntity.setToken(token);
+        tokenEntity.setTimeOut(timeout);
+
+        tokenInterface.save(tokenEntity);
+    }
 
     /*public void sendOTP(String recipientEmail, String otp) throws MessagingException {
 
@@ -442,7 +454,6 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
         else{
             return 3;
         }
-
     }
         public void logout (String email){
 

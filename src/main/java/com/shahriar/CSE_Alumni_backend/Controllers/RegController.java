@@ -1,7 +1,9 @@
 package com.shahriar.CSE_Alumni_backend.Controllers;
 
+import com.fasterxml.jackson.databind.ser.std.TokenBufferSerializer;
 import com.shahriar.CSE_Alumni_backend.Entities.Register;
 import com.shahriar.CSE_Alumni_backend.Entities.UserStatus;
+import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.zip.DataFormatException;
 
@@ -21,6 +25,7 @@ public class RegController {
 
     @Autowired
     private RegService regService;
+
 
     //@PostMapping("/Unused")
     //public ResponseEntity<?> continueWithCUETGmail (@RequestParam("CUETGmail") String gmail)  throws Exception{
@@ -87,6 +92,7 @@ public class RegController {
         }*/
 
 
+        //Public API's
     @PostMapping("/public/requestForAccount")
     public ResponseEntity<?> requestForCreatingAccToAdmin(
                                         @RequestParam("userName") String name,
@@ -125,6 +131,8 @@ public class RegController {
         return new ResponseEntity<>("Account is already exists with this email...", HttpStatus.OK);
     }
 
+
+
     @PostMapping("/public/UserLogin")
     public ResponseEntity<?> login( @RequestParam("email") String email,
                                     @RequestParam("password") String password
@@ -132,7 +140,7 @@ public class RegController {
 
         int authentication = regService.login(email, password);
 
-        System.out.println(email + " " + password + " " + authentication);
+        //System.out.println(email + " " + password + " " + authentication);
 
         if (authentication == 3) {
             return ResponseEntity
@@ -140,17 +148,25 @@ public class RegController {
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("Sorry!!! There is no account with this email");
 
-        } else if (authentication == 0) {
+        }
+        else if (authentication == 0) {
             return ResponseEntity
                     .status(HttpStatus.FORBIDDEN) // 403 Forbidden for "Account not approved"
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("Your account is not approved...After approval you can login...");
-        } else if (authentication == 2) {
+        }
+        else if (authentication == 2) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED) // 401 Unauthorized for "Incorrect password"
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("Password is incorrect...try again");
-        } else if(authentication==1){
+        }
+        else if(authentication==1){
+
+            String token = generateToken(email);
+
+            regService.saveToken(email, token, LocalDateTime.now().plusMinutes(60));
+
             return ResponseEntity
                     .status(HttpStatus.OK) // 200 OK for "User login successful"
                     .contentType(MediaType.APPLICATION_JSON)
@@ -161,9 +177,63 @@ public class RegController {
                 .status(HttpStatus.BAD_REQUEST) // 200 OK for "User login successful"
                 .contentType(MediaType.APPLICATION_JSON)
                 .body("Something wen wrong....");
+
+    }
+
+    private String generateToken(String email) {
+
+        String token = UUID.randomUUID().toString();
+
+        // You can customize the format of the timeout if needed
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        // Concatenate the email and current time to make the token unique
+        token += "_" + email + "_" + LocalDateTime.now().format(formatter);
+
+        return token;
     }
 
 
+
+
+    @GetMapping("/public/fetch/{email}")
+    public ResponseEntity<?> fetchImage(@PathVariable String email) throws DataFormatException {
+
+        Register fetchedData = regService.fetchRecord(email);
+
+        if (fetchedData.equals(new Register()))
+            return new ResponseEntity<>("Sorry...no records exists with this email or you aren't logged in...", HttpStatus.BAD_REQUEST);
+
+        saveImageOfSpecificAcc(fetchedData);
+
+        if(fetchedData.getUserStatus().equals(UserStatus.APPROVED))
+            return new ResponseEntity<>(fetchedData, HttpStatus.OK);
+
+
+        return new ResponseEntity<>("Your request is pending currently", HttpStatus.OK);
+    }
+
+
+
+    @GetMapping("/public/fetch/allRegisteredAcc")
+    public ResponseEntity<?> allRegisteredStudents(){
+
+        List<Register> registeredAcc = regService.getAllRegisteredStudents();
+
+        if(registeredAcc==null)
+            return new ResponseEntity<>("No registered accounts are available", HttpStatus.OK);
+
+        saveRegisteredAccounts(registeredAcc);
+
+        return new ResponseEntity<>(registeredAcc, HttpStatus.OK);
+    }
+
+
+
+
+
+
+    // private API's
     @PostMapping("/updateAcc/{email}")
     public ResponseEntity<?> updateAccount(@PathVariable String email,
                                                 @RequestParam(required = false) String name,
@@ -199,39 +269,6 @@ public class RegController {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-
-
-    @GetMapping("/public/fetch/{email}")
-    public ResponseEntity<?> fetchImage(@PathVariable String email) throws DataFormatException {
-
-        Register fetchedData = regService.fetchRecord(email);
-
-        if (fetchedData.equals(new Register()))
-            return new ResponseEntity<>("Sorry...no records exists with this email or you aren't logged in...", HttpStatus.BAD_REQUEST);
-
-        saveImageOfSpecificAcc(fetchedData);
-
-        if(fetchedData.getUserStatus().equals(UserStatus.APPROVED))
-            return new ResponseEntity<>(fetchedData, HttpStatus.OK);
-
-
-        return new ResponseEntity<>("Your request is pending currently", HttpStatus.OK);
-    }
-
-
-
-    @GetMapping("/public/fetch/allRegisteredAcc")
-    public ResponseEntity<?> allRegisteredStudents(){
-
-        List<Register> registeredAcc = regService.getAllRegisteredStudents();
-
-        if(registeredAcc==null)
-            return new ResponseEntity<>("No registered accounts are available", HttpStatus.OK);
-
-        saveRegisteredAccounts(registeredAcc);
-
-        return new ResponseEntity<>(registeredAcc, HttpStatus.OK);
-    }
 
 
 

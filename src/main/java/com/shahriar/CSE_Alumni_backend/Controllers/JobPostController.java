@@ -61,11 +61,8 @@ public class JobPostController {
 
 
     //GET methods
-    @GetMapping("/fetch/allJobPost/{userEmail}")
-    public ResponseEntity<?> fetchAllJobPost(@PathVariable String userEmail) throws IOException {
-
-        if (regService.returnUserStatus(userEmail) != 1)
-            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
+    @GetMapping("/fetch/allJobPost")
+    public ResponseEntity<?> fetchAllJobPost() throws IOException {
 
 
         List<JobPost> allJobPost = jobPostService.getAllJobPost();
@@ -73,15 +70,13 @@ public class JobPostController {
         if (allJobPost == null)
             return new ResponseEntity<>("No post yet...Site has just developed", HttpStatus.OK);
 
-
         saveImagesInSystem(allJobPost);
-
 
         return new ResponseEntity<>(allJobPost, HttpStatus.OK);
     }
 
 
-    @GetMapping("/fetch/allJobPostOfAnyUser/{userEmail}")
+    @GetMapping("/fetch/allJobPostOfAnyUser")
     public ResponseEntity<?> fetchAllPostOfAnyUser(@PathVariable String userEmail) throws IOException {
 
         if (regService.returnUserStatus(userEmail) != 1)
