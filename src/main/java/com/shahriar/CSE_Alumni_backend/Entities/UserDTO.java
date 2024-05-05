@@ -21,12 +21,8 @@ public class UserDTO {
     private Long id;
 
     private String userName;
-    private String gmail;
-    private String role;
-    private String profilePicture;
-
-
-
+    private String password;
+    //private String profilePicture;
 
 
 
@@ -48,27 +44,12 @@ public class UserDTO {
         this.userName = userName;
     }
 
-    public String getGmail() {
-        return gmail;
+
+    public String getPassword() {
+        return password;
     }
 
-    public void setGmail(String gmail) {
-        this.gmail = gmail;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public String getProfilePicture() {
-        return profilePicture;
-    }
-
-    public void setProfilePicture(String rofilePicture) {
-        this.profilePicture = profilePicture;
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

@@ -1,10 +1,14 @@
 package com.shahriar.CSE_Alumni_backend.Controllers;
 
 import com.shahriar.CSE_Alumni_backend.Entities.Register;
+import com.shahriar.CSE_Alumni_backend.Entities.RegistrationDTO;
+import com.shahriar.CSE_Alumni_backend.Entities.UserDTO;
 import com.shahriar.CSE_Alumni_backend.Entities.UserStatus;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,7 +18,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.zip.DataFormatException;
 
-@RequestMapping("api/v1")
+//@RequestMapping("api/v1")
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 public class RegController {
 
@@ -55,41 +60,61 @@ public class RegController {
         Random random = new Random();
         int otp = 100000 + random.nextInt(900000);
         return String.valueOf(otp);
-    }*/
+    }
 
     @GetMapping("/login/oauth2")
-    public void handleGoogleOAuthCallback(@RequestParam("code") String authorizationCode) {
+    public String handleGoogleOAuthCallback(@RequestParam("code") String authorizationCode) {
         // Process the authorization code, exchange for tokens, and fetch user details
-        //GoogleUserInfo userInfo = googleOAuthService.getUserInfo(authorizationCode);
+        UserDTO userInfo = regService.getUserInfo(authorizationCode);
+        System.out.println("OKKKKKKKKKKKKKKK");
+        return "Account is created successfully....";
 
-        // Save the user entity to the database using the service method
-        //googleOAuthService.saveUser(userInfo);
 
-    }
+        // Resource owner Like (Google, linkedin)
+        // Client who request for log in
+        // Auth server (Google linkedin server)
+        // Resource server
+    }*/
+
+
+      /*  @PostMapping("/register")
+        public ResponseEntity<?> register(@RequestBody RegistrationDTO registrationDTO) {
+
+            System.out.println("Student ID: " + registrationDTO.getStudentId());
+            System.out.println("Full Name: " + registrationDTO.getFullName());
+            System.out.println("Department ID: " + registrationDTO.getDepartmentId());
+            System.out.println("_token: " + registrationDTO.get_token());
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Registration successful");
+            return ResponseEntity.ok(response);
+        }*/
+
 
     @PostMapping("/requestForAccount")
     public ResponseEntity<?> requestForCreatingAccToAdmin(
-                                        @RequestParam("name") String name,
-                                        @RequestParam("email") String email,
-                                        @RequestParam("password") String password,
-                                        @RequestParam("role") String role,
-                                        @RequestParam("profilePic") MultipartFile profilePic,
+                                        @RequestParam("userName") String name,
+                                        @RequestParam("userEmail") String email,
+                                        @RequestParam("passwordOfUser") String password,
+                                        @RequestParam("roleOfUser") String role,
+                                        @RequestParam("profilePicOfUser") MultipartFile profilePic,
 
-                                        @RequestParam(value = "studentId", required = false) String studentId,
-                                        @RequestParam(value = "studentIdCard", required = false) MultipartFile studentIdCard,
+                                        @RequestParam(value = "studentIdCard", required = false) String studentId,
+                                        @RequestParam(value = "IdCardPic", required = false) MultipartFile studentIdCard,
 
-                                        @RequestParam(value = "graduationYear", required = false) String graduationYear,
+                                        @RequestParam(value = "YearOfGraduation", required = false) String graduationYear,
                                         @RequestParam(value = "pvc", required = false) MultipartFile pvc
                                         )
                       throws IOException {
 
 
-        boolean studentInfoProvided = studentId != null && studentIdCard != null;
+
+      /*  boolean studentInfoProvided = studentId != null && studentIdCard != null;
         boolean graduationInfoProvided = graduationYear != null && pvc != null;
 
         if (!studentInfoProvided && !graduationInfoProvided) {
             return new ResponseEntity<>("Either student ID card and student ID or graduation year and PVC must be provided.", HttpStatus.BAD_REQUEST);
-        }
+        }*/
 
         if(!regService.isAccountExistsAlready(email)){
             String response = regService.requestForAcc( name, email, password, role, profilePic,
@@ -178,28 +203,40 @@ public class RegController {
     @PostMapping("/UserLogin")
     public ResponseEntity<?> login( @RequestParam("email") String email,
                        @RequestParam("password") String password
-                     ){
+                     ) {
 
         int authentication = regService.login(email, password);
 
-        if(authentication==0)
+        System.out.println(email + " " + password + " " + authentication);
+
+        if (authentication == 3) {
             return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
+                    .status(HttpStatus.NOT_FOUND) // 404 Not Found for "No account with this email"
+                    .contentType(MediaType.APPLICATION_JSON)
                     .body("Sorry!!! There is no account with this email");
 
-        else if(authentication==1)
+        } else if (authentication == 0) {
             return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body("User login successful");
-
-        else if(authentication==3)
-            return ResponseEntity
-                    .status(HttpStatus.OK)
+                    .status(HttpStatus.FORBIDDEN) // 403 Forbidden for "Account not approved"
+                    .contentType(MediaType.APPLICATION_JSON)
                     .body("Your account is not approved...After approval you can login...");
+        } else if (authentication == 2) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED) // 401 Unauthorized for "Incorrect password"
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("Password is incorrect...try again");
+        } else if(authentication==1){
+            return ResponseEntity
+                    .status(HttpStatus.OK) // 200 OK for "User login successful"
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("User login successful");
+        }
 
-        return ResponseEntity.status(401).body("Password is incorrect ...try again");
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST) // 200 OK for "User login successful"
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("Something wen wrong....");
     }
-
 
     @GetMapping("/UserLogout")
     public ResponseEntity<?> logout(@RequestParam("email") String email){

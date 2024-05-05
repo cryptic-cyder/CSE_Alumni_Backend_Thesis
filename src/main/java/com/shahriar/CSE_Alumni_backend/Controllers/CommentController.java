@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
 
-@RequestMapping("api/v1")
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 public class CommentController {
 

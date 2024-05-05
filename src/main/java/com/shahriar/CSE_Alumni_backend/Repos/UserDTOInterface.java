@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserDTOInterface extends JpaRepository<UserDTO, Long> {
 
-    UserDTO findByGmail(String gmail);
+
 }

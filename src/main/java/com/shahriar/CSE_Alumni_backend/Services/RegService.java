@@ -7,21 +7,15 @@ import com.shahriar.CSE_Alumni_backend.Entities.UserTrack;
 import com.shahriar.CSE_Alumni_backend.Repos.RegRepoIF;
 import com.shahriar.CSE_Alumni_backend.Repos.UserDTOInterface;
 import com.shahriar.CSE_Alumni_backend.Repos.UsertrackRepo;
-
-import javax.mail.*;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
-
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.stereotype.Service;
 
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-
 import java.util.Optional;
 import java.util.zip.DataFormatException;
-
 import java.util.*;
 
 @Service
@@ -30,10 +24,10 @@ public class RegService {
     @Autowired
     private RegRepoIF regRepoIF;
 
-    /*@Autowired
+    @Autowired
     private UserDTOInterface userDTOInterface;
 
-    public void sendOTP(String recipientEmail, String otp) throws MessagingException {
+    /*public void sendOTP(String recipientEmail, String otp) throws MessagingException {
 
         // Configuration setting for email sending
         Properties props = new Properties();
@@ -105,6 +99,57 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
         }
     }*/
 
+/*
+    @Autowired
+    private OAuth2AuthorizedClientService authorizedClientService;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    public UserDTO getUserInfo(String authorizationCode) {
+        // Exchange authorization code for access token
+        OAuth2AuthorizedClient authorizedClient = authorizedClientService.loadAuthorizedClient("google", authorizationCode);
+
+        OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
+
+        GoogleUserInfo googleUserInfo = fetchUserInfoFromGoogle(accessToken);
+
+        return convertToUserDTO(googleUserInfo);
+    }
+
+    private GoogleUserInfo fetchUserInfoFromGoogle(OAuth2AccessToken accessToken) {
+
+        // Construct request to fetch user info from Google
+        String userInfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken.getTokenValue());
+        HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+
+        // Send GET request to Google's user info endpoint
+        ResponseEntity<GoogleUserInfo> responseEntity = restTemplate.exchange(
+                userInfoUrl,
+                HttpMethod.GET,
+                requestEntity,
+                GoogleUserInfo.class
+        );
+
+        // Extract user info from the response
+        return responseEntity.getBody();
+    }
+
+    private UserDTO convertToUserDTO(GoogleUserInfo googleUserInfo) {
+
+        UserDTO userDTO = new UserDTO();
+
+        userDTO.setUserName(googleUserInfo.getName());
+        userDTO.setGmail(googleUserInfo.getEmail());
+        userDTO.setProfilePicture(googleUserInfo.getPicture());
+        userDTO.setRole("Student");
+
+        userDTOInterface.save(userDTO);
+
+        return userDTO;
+    }*/
+
 
     public String requestForAcc(String name, String email, String password, String role, MultipartFile profilePic,
                                 String studentId, MultipartFile studentIdCard,
@@ -121,8 +166,8 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
                     .email(email)
                     .password(password)
                     .role(role)
-                    .studentId(role.equalsIgnoreCase("student") ? studentId : null)
-                    .graduationYear(role.equalsIgnoreCase("alumni") ? graduationYear : null)
+                    .studentId(studentId)
+                    .graduationYear(graduationYear)
                     .studentIdCardPic(studentIdBytes)
                     .profilePic(profilePicBytes)
                     .PVCPic(pvcBytes)
@@ -226,6 +271,12 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
     public List<Register> getPendingUsers() {
 
         List<Register> existingRegister = regRepoIF.findByUserStatus(UserStatus.PENDING);
+
+        /*for(Register register: existingRegister){
+            if(register.getPVCPic()!=null)
+                System.out.println(register.getEmail());
+        }*/
+
 
         if (existingRegister.size() == 0)
             return new ArrayList<>();
@@ -360,77 +411,84 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
         Register recordFromDB = recordFromDBOptional.get();
         UserTrack userTrack = usertrackRepo.findByEmail(recordFromDB.getEmail());
 
+        if (userTrack == null)
+            return 3;
+
         String passwordFromDB = recordFromDB.getPassword();
 
-        if (recordFromDB.getUserStatus().equals(UserStatus.APPROVED)) {
+        if (isAccountExistsAlready(email)) {
 
-            if (password.equals(passwordFromDB)) {
+            if (recordFromDB.getUserStatus().equals(UserStatus.APPROVED)) {
 
-                //currentlyLoggedInUserEmail = email;
-                userTrack.setStatus(1);
+                if (password.equals(passwordFromDB)) {
+
+                    //currentlyLoggedInUserEmail = email;
+                    userTrack.setStatus(1);
+                    usertrackRepo.save(userTrack);
+
+                    return 1;
+                }
+
+                //currentlyLoggedInUserEmail=null;
+                userTrack.setStatus(2);
                 usertrackRepo.save(userTrack);
 
-                return 1;
+                return 2;
             }
+            else {
+                return 0;
+            }
+        }
+        else{
+            return 3;
+        }
 
-            //currentlyLoggedInUserEmail=null;
-            userTrack.setStatus(2);
+    }
+        public void logout (String email){
+
+            UserTrack userTrack = usertrackRepo.findByEmail(email);
+            System.out.println(userTrack);
+
+            userTrack.setStatus(3);
             usertrackRepo.save(userTrack);
 
-            return 2;
+            //currentlyLoggedInUserEmail = null;
         }
 
-        //currentlyLoggedInUserEmail=null;
-        return 3;
 
-    }
-
-
-    public void logout(String email) {
-
-        UserTrack userTrack = usertrackRepo.findByEmail(email);
-        System.out.println(userTrack);
-
-        userTrack.setStatus(3);
-        usertrackRepo.save(userTrack);
-
-        //currentlyLoggedInUserEmail = null;
-    }
+        public UserTrack trackFindByEmail (String email){
+            return usertrackRepo.findByEmail(email);
+        }
 
 
-    public UserTrack trackFindByEmail(String email) {
-        return usertrackRepo.findByEmail(email);
-    }
+        public boolean adminLogin (String email, String password){
 
+            if (email.equals("CUETCSE@admin.cuet.ac.bd") && password.equals("1234")) {
 
-    public boolean adminLogin(String email, String password) {
+                if (!usertrackRepo.existsByEmail(email)) {
+                    UserTrack AdminUserTrack = UserTrack.builder()
+                            .email(email)
+                            .status(1)
+                            .build();
 
-        if (email.equals("CUETCSE@admin.cuet.ac.bd") && password.equals("1234")) {
+                    usertrackRepo.save(AdminUserTrack);
+                } else {
+                    UserTrack adminUserTrack = usertrackRepo.findByEmail(email);
+                    adminUserTrack.setStatus(1);
+                    usertrackRepo.save(adminUserTrack);
+                }
 
-            if (!usertrackRepo.existsByEmail(email)) {
-                UserTrack AdminUserTrack = UserTrack.builder()
-                        .email(email)
-                        .status(1)
-                        .build();
-
-                usertrackRepo.save(AdminUserTrack);
-            } else {
-                UserTrack adminUserTrack = usertrackRepo.findByEmail(email);
-                adminUserTrack.setStatus(1);
-                usertrackRepo.save(adminUserTrack);
+                return true;
             }
-
-            return true;
+            return false;
         }
-        return false;
+
+        public void adminLogout (String email){
+
+            UserTrack adminUserTrack = usertrackRepo.findByEmail("CUETCSE@admin.cuet.ac.bd");
+
+            adminUserTrack.setStatus(3);
+            usertrackRepo.save(adminUserTrack);
+        }
+
     }
-
-    public void adminLogout(String email) {
-
-        UserTrack adminUserTrack = usertrackRepo.findByEmail("CUETCSE@admin.cuet.ac.bd");
-
-        adminUserTrack.setStatus(3);
-        usertrackRepo.save(adminUserTrack);
-    }
-
-}

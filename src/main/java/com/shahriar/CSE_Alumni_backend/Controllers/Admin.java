@@ -1,7 +1,6 @@
 package com.shahriar.CSE_Alumni_backend.Controllers;
 
-import com.shahriar.CSE_Alumni_backend.Entities.Comment;
-import com.shahriar.CSE_Alumni_backend.Entities.JobPost;
+
 import com.shahriar.CSE_Alumni_backend.Entities.Register;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 
-@RequestMapping("api/v1")
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 public class Admin {
 
@@ -22,10 +21,12 @@ public class Admin {
 
 
     @PostMapping("/adminLogin")
-    public ResponseEntity<?> adminLogin(@RequestParam("email") String email,
-                                        @RequestParam("password") String password) {
+    public ResponseEntity<?> adminLogin(@RequestParam("email") String emailOfAdmin,
+                                        @RequestParam("password") String passwordOfAdmin) {
 
-        if (regService.adminLogin(email, password)) {
+        System.out.println(emailOfAdmin+" "+passwordOfAdmin);
+
+        if (regService.adminLogin(emailOfAdmin, passwordOfAdmin)) {
 
             return ResponseEntity
                     .status(HttpStatus.OK)
@@ -33,7 +34,7 @@ public class Admin {
         }
 
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
+                .status(HttpStatus.OK)
                 .body("Password incorrect...Access denied...Please try again");
 
     }
@@ -53,7 +54,7 @@ public class Admin {
             return new ResponseEntity<>(pendingUsers, HttpStatus.OK);
         }
 
-        return new ResponseEntity<>("Access denied...login as admin first", HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>("Access denied...login as admin first", HttpStatus.UNAUTHORIZED);
     }
 
 
