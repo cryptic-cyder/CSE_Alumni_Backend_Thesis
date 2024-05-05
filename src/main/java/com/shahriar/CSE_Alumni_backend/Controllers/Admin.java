@@ -20,7 +20,7 @@ public class Admin {
     private RegService regService;
 
 
-    @PostMapping("/adminLogin")
+    @PostMapping("/public/adminLogin")
     public ResponseEntity<?> adminLogin(@RequestParam("email") String emailOfAdmin,
                                         @RequestParam("password") String passwordOfAdmin) {
 

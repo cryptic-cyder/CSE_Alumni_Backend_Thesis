@@ -3,7 +3,6 @@ package com.shahriar.CSE_Alumni_backend.Controllers;
 import com.shahriar.CSE_Alumni_backend.Entities.Comment;
 import com.shahriar.CSE_Alumni_backend.Entities.JobPost;
 
-import com.shahriar.CSE_Alumni_backend.Services.CommentService;
 import com.shahriar.CSE_Alumni_backend.Services.JobPostService;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
 
@@ -38,7 +37,7 @@ public class JobPostController {
             return new ResponseEntity<>("No matching is found", HttpStatus.OK);
         }
 
-         saveSearchResults(searchResults);
+        saveSearchResults(searchResults);
 
         return ResponseEntity.ok().body(searchResults);
     }

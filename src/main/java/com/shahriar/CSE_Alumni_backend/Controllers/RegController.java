@@ -1,18 +1,14 @@
 package com.shahriar.CSE_Alumni_backend.Controllers;
 
 import com.shahriar.CSE_Alumni_backend.Entities.Register;
-import com.shahriar.CSE_Alumni_backend.Entities.RegistrationDTO;
-import com.shahriar.CSE_Alumni_backend.Entities.UserDTO;
 import com.shahriar.CSE_Alumni_backend.Entities.UserStatus;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
@@ -91,7 +87,7 @@ public class RegController {
         }*/
 
 
-    @PostMapping("/requestForAccount")
+    @PostMapping("/public/requestForAccount")
     public ResponseEntity<?> requestForCreatingAccToAdmin(
                                         @RequestParam("userName") String name,
                                         @RequestParam("userEmail") String email,
@@ -127,6 +123,44 @@ public class RegController {
         }
 
         return new ResponseEntity<>("Account is already exists with this email...", HttpStatus.OK);
+    }
+
+    @PostMapping("/public/UserLogin")
+    public ResponseEntity<?> login( @RequestParam("email") String email,
+                                    @RequestParam("password") String password
+    ) {
+
+        int authentication = regService.login(email, password);
+
+        System.out.println(email + " " + password + " " + authentication);
+
+        if (authentication == 3) {
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND) // 404 Not Found for "No account with this email"
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("Sorry!!! There is no account with this email");
+
+        } else if (authentication == 0) {
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN) // 403 Forbidden for "Account not approved"
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("Your account is not approved...After approval you can login...");
+        } else if (authentication == 2) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED) // 401 Unauthorized for "Incorrect password"
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("Password is incorrect...try again");
+        } else if(authentication==1){
+            return ResponseEntity
+                    .status(HttpStatus.OK) // 200 OK for "User login successful"
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("User login successful");
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST) // 200 OK for "User login successful"
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("Something wen wrong....");
     }
 
 
@@ -167,7 +201,7 @@ public class RegController {
 
 
 
-    @GetMapping("/fetch/{email}")
+    @GetMapping("/public/fetch/{email}")
     public ResponseEntity<?> fetchImage(@PathVariable String email) throws DataFormatException {
 
         Register fetchedData = regService.fetchRecord(email);
@@ -186,7 +220,7 @@ public class RegController {
 
 
 
-    @GetMapping("/fetch/allRegisteredAcc")
+    @GetMapping("/public/fetch/allRegisteredAcc")
     public ResponseEntity<?> allRegisteredStudents(){
 
         List<Register> registeredAcc = regService.getAllRegisteredStudents();
@@ -200,43 +234,7 @@ public class RegController {
     }
 
 
-    @PostMapping("/UserLogin")
-    public ResponseEntity<?> login( @RequestParam("email") String email,
-                       @RequestParam("password") String password
-                     ) {
 
-        int authentication = regService.login(email, password);
-
-        System.out.println(email + " " + password + " " + authentication);
-
-        if (authentication == 3) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND) // 404 Not Found for "No account with this email"
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body("Sorry!!! There is no account with this email");
-
-        } else if (authentication == 0) {
-            return ResponseEntity
-                    .status(HttpStatus.FORBIDDEN) // 403 Forbidden for "Account not approved"
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body("Your account is not approved...After approval you can login...");
-        } else if (authentication == 2) {
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED) // 401 Unauthorized for "Incorrect password"
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body("Password is incorrect...try again");
-        } else if(authentication==1){
-            return ResponseEntity
-                    .status(HttpStatus.OK) // 200 OK for "User login successful"
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body("User login successful");
-        }
-
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST) // 200 OK for "User login successful"
-                .contentType(MediaType.APPLICATION_JSON)
-                .body("Something wen wrong....");
-    }
 
     @GetMapping("/UserLogout")
     public ResponseEntity<?> logout(@RequestParam("email") String email){
