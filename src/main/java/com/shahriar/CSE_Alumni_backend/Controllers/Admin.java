@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:3000")
@@ -24,9 +25,12 @@ public class Admin {
     public ResponseEntity<?> adminLogin(@RequestParam("email") String emailOfAdmin,
                                         @RequestParam("password") String passwordOfAdmin) {
 
-        System.out.println(emailOfAdmin+" "+passwordOfAdmin);
 
         if (regService.adminLogin(emailOfAdmin, passwordOfAdmin)) {
+
+            String token = new RegController().generateToken(emailOfAdmin);
+
+            regService.saveToken(emailOfAdmin, token, LocalDateTime.now().plusMinutes(3));
 
             return ResponseEntity
                     .status(HttpStatus.OK)
@@ -35,7 +39,7 @@ public class Admin {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body("Password incorrect...Access denied...Please try again");
+                .body("Email or Password is incorrect...Access denied...Please try again");
 
     }
 
@@ -91,11 +95,11 @@ public class Admin {
     }
 
     @PostMapping("/adminLogout")
-    public ResponseEntity<String> adminLogout(@RequestParam("email") String email) {
+    public ResponseEntity<String> adminLogout() {
 
         if (regService.returnAdminStatus() == 1) {
 
-            regService.adminLogout(email);
+            regService.adminLogout();
             return new ResponseEntity<>("Successfully log out as admin", HttpStatus.OK);
 
         }

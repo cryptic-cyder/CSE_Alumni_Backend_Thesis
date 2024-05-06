@@ -1,9 +1,8 @@
 package com.shahriar.CSE_Alumni_backend.Controllers;
 
-import com.fasterxml.jackson.databind.ser.std.TokenBufferSerializer;
+
 import com.shahriar.CSE_Alumni_backend.Entities.Register;
 import com.shahriar.CSE_Alumni_backend.Entities.UserStatus;
-import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -31,13 +31,11 @@ public class RegController {
     //public ResponseEntity<?> continueWithCUETGmail (@RequestParam("CUETGmail") String gmail)  throws Exception{
 
 
-        /**
-
-         588087058292-m98l2fld9edbpvu1j6e08ieclr7a727n.apps.googleusercontent.com
-
-         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
-
-         * */
+    /**
+     * 588087058292-m98l2fld9edbpvu1j6e08ieclr7a727n.apps.googleusercontent.com
+     * <p>
+     * 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
+     */
 
 
 
@@ -92,22 +90,22 @@ public class RegController {
         }*/
 
 
-        //Public API's
+    //Public API's
     @PostMapping("/public/requestForAccount")
     public ResponseEntity<?> requestForCreatingAccToAdmin(
-                                        @RequestParam("userName") String name,
-                                        @RequestParam("userEmail") String email,
-                                        @RequestParam("passwordOfUser") String password,
-                                        @RequestParam("roleOfUser") String role,
-                                        @RequestParam("profilePicOfUser") MultipartFile profilePic,
+            @RequestParam("userName") String name,
+            @RequestParam("userEmail") String email,
+            @RequestParam("passwordOfUser") String password,
+            @RequestParam("roleOfUser") String role,
+            @RequestParam("profilePicOfUser") MultipartFile profilePic,
 
-                                        @RequestParam(value = "studentIdCard", required = false) String studentId,
-                                        @RequestParam(value = "IdCardPic", required = false) MultipartFile studentIdCard,
+            @RequestParam(value = "studentIdCard", required = false) String studentId,
+            @RequestParam(value = "IdCardPic", required = false) MultipartFile studentIdCard,
 
-                                        @RequestParam(value = "YearOfGraduation", required = false) String graduationYear,
-                                        @RequestParam(value = "pvc", required = false) MultipartFile pvc
-                                        )
-                      throws IOException {
+            @RequestParam(value = "YearOfGraduation", required = false) String graduationYear,
+            @RequestParam(value = "pvc", required = false) MultipartFile pvc
+    )
+            throws IOException {
 
 
 
@@ -118,24 +116,23 @@ public class RegController {
             return new ResponseEntity<>("Either student ID card and student ID or graduation year and PVC must be provided.", HttpStatus.BAD_REQUEST);
         }*/
 
-        if(!regService.isAccountExistsAlready(email)){
-            String response = regService.requestForAcc( name, email, password, role, profilePic,
+        if (!regService.isAccountExistsAlready(email)) {
+            String response = regService.requestForAcc(name, email, password, role, profilePic,
                     studentId, studentIdCard,
                     graduationYear, pvc,
                     UserStatus.PENDING
             );
 
-            return new ResponseEntity<>(response+" and waiting for approval", HttpStatus.OK);
+            return new ResponseEntity<>(response + " and waiting for approval", HttpStatus.OK);
         }
 
         return new ResponseEntity<>("Account is already exists with this email...", HttpStatus.OK);
     }
 
 
-
     @PostMapping("/public/UserLogin")
-    public ResponseEntity<?> login( @RequestParam("email") String email,
-                                    @RequestParam("password") String password
+    public ResponseEntity<?> login(@RequestParam("email") String email,
+                                   @RequestParam("password") String password
     ) {
 
         int authentication = regService.login(email, password);
@@ -148,24 +145,21 @@ public class RegController {
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("Sorry!!! There is no account with this email");
 
-        }
-        else if (authentication == 0) {
+        } else if (authentication == 0) {
             return ResponseEntity
                     .status(HttpStatus.FORBIDDEN) // 403 Forbidden for "Account not approved"
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("Your account is not approved...After approval you can login...");
-        }
-        else if (authentication == 2) {
+        } else if (authentication == 2) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED) // 401 Unauthorized for "Incorrect password"
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("Password is incorrect...try again");
-        }
-        else if(authentication==1){
+        } else if (authentication == 1) {
 
             String token = generateToken(email);
 
-            regService.saveToken(email, token, LocalDateTime.now().plusMinutes(60));
+            regService.saveToken(email, token, LocalDateTime.now().plusMinutes(3));
 
             return ResponseEntity
                     .status(HttpStatus.OK) // 200 OK for "User login successful"
@@ -180,7 +174,7 @@ public class RegController {
 
     }
 
-    private String generateToken(String email) {
+    public String generateToken(String email) {
 
         String token = UUID.randomUUID().toString();
 
@@ -188,12 +182,10 @@ public class RegController {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         // Concatenate the email and current time to make the token unique
-        token += "_" + email + "_" + LocalDateTime.now().format(formatter);
+        token += "_" + email + "_" + LocalDateTime.now().plusMinutes(3).format(formatter);
 
         return token;
     }
-
-
 
 
     @GetMapping("/public/fetch/{email}")
@@ -206,7 +198,7 @@ public class RegController {
 
         saveImageOfSpecificAcc(fetchedData);
 
-        if(fetchedData.getUserStatus().equals(UserStatus.APPROVED))
+        if (fetchedData.getUserStatus().equals(UserStatus.APPROVED))
             return new ResponseEntity<>(fetchedData, HttpStatus.OK);
 
 
@@ -214,13 +206,12 @@ public class RegController {
     }
 
 
-
     @GetMapping("/public/fetch/allRegisteredAcc")
-    public ResponseEntity<?> allRegisteredStudents(){
+    public ResponseEntity<?> allRegisteredStudents() {
 
         List<Register> registeredAcc = regService.getAllRegisteredStudents();
 
-        if(registeredAcc==null)
+        if (registeredAcc == null)
             return new ResponseEntity<>("No registered accounts are available", HttpStatus.OK);
 
         saveRegisteredAccounts(registeredAcc);
@@ -229,54 +220,13 @@ public class RegController {
     }
 
 
-
-
-
-
     // private API's
-    @PostMapping("/updateAcc/{email}")
-    public ResponseEntity<?> updateAccount(@PathVariable String email,
-                                                @RequestParam(required = false) String name,
-                                                @RequestParam(required = false) String password,
-                                                @RequestParam(required = false) String role,
-                                                @RequestParam(required = false) MultipartFile profilePic,
-                                                @RequestParam(required = false) String studentId,
-                                                @RequestParam(required = false) MultipartFile studentIdCard,
-                                                @RequestParam(required = false) String graduationYear,
-                                                @RequestParam(required = false) MultipartFile pvc
-                                                ) {
-        if(regService.returnUserStatus(email)!=1)
-            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
-
-        String result = regService.updateAccount(email, name, password, role, profilePic,
-                studentId, studentIdCard, graduationYear, pvc);
-
-        if(result.equals("No Account found"))
-            return new ResponseEntity<>("No account exists with this email...", HttpStatus.BAD_REQUEST);
-
-        return new ResponseEntity<>(result, HttpStatus.OK);
-    }
-
-
-    @DeleteMapping("/deleteAcc/{email}")
-    public ResponseEntity<?> updateAccount(@PathVariable String email) {
-
-        if(regService.returnUserStatus(email)!=1)
-            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
-
-        String result = regService.deleteAccount(email);
-
-        return new ResponseEntity<>(result, HttpStatus.OK);
-    }
-
-
-
 
 
     @GetMapping("/UserLogout")
-    public ResponseEntity<?> logout(@RequestParam("email") String email){
+    public ResponseEntity<?> logout() {
 
-        regService.logout(email);
+        regService.logout();
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -284,44 +234,82 @@ public class RegController {
     }
 
 
+    @PostMapping("/updateAcc")
+    public ResponseEntity<?> updateAccount(
+            @RequestParam(value = "Name",required = false) String name,
+            @RequestParam(value = "password", required = false) String password,
+            @RequestParam(value = "role",required = false) String role,
+            @RequestParam(value = "profile",required = false) MultipartFile profilePic,
+            @RequestParam(value="studentId" , required = false) String studentId,
+            @RequestParam(value = "studentIdCard" ,required = false) MultipartFile studentIdCard,
+            @RequestParam(value = "graduationYear",required = false) String graduationYear,
+            @RequestParam(value = "PVCPic",required = false) MultipartFile pvc
+    ) {
+
+        String result = regService.updateAccount(name, password, role, profilePic,
+                studentId, studentIdCard, graduationYear, pvc);
+
+        if (result.equals("No Account found"))
+            return new ResponseEntity<>("No account exists with this email...", HttpStatus.BAD_REQUEST);
+
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+
+    @DeleteMapping("/deleteAcc")
+    public ResponseEntity<?> deleteAccount() {
+
+
+        String result = regService.deleteAccount();
+
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+
+
+
+
+
+
+
+
+
+
     public void saveImageOfSpecificAcc(Register account) {
 
         String accountFolder = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Images\\SpecificAccounts\\";
 
-            byte[] image = account.getProfilePic();
+        byte[] image = account.getProfilePic();
 
-            if (image != null) {
+        if (image != null) {
 
-                String filePath = accountFolder + account.getName() + ".jpg";
+            String filePath = accountFolder + account.getName() + ".jpg";
 
-                try (FileOutputStream fos = new FileOutputStream(filePath)) {
+            try (FileOutputStream fos = new FileOutputStream(filePath)) {
 
-                    fos.write(image);
-                }
-                catch (IOException e) {
-                    System.out.println("Error writing image file: " + e.getMessage());
-                    e.printStackTrace();
-                }
-
+                fos.write(image);
+            } catch (IOException e) {
+                System.out.println("Error writing image file: " + e.getMessage());
+                e.printStackTrace();
             }
 
-        if(account.getStudentIdCardPic()!=null){
-            saveIdentityList(account.getStudentIdCardPic(), accountFolder, account);
         }
-        else if(account.getPVCPic()!=null){
+
+        if (account.getStudentIdCardPic() != null) {
+            saveIdentityList(account.getStudentIdCardPic(), accountFolder, account);
+        } else if (account.getPVCPic() != null) {
             saveIdentityList(account.getPVCPic(), accountFolder, account);
         }
     }
 
-    public void saveIdentityList(byte[] identity, String accountFolder, Register account){
+    public void saveIdentityList(byte[] identity, String accountFolder, Register account) {
 
         String filePath = accountFolder + account.getName() + " identity.jpg";
 
         try (FileOutputStream fos = new FileOutputStream(filePath)) {
 
             fos.write(identity);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             System.out.println("Error writing image file: " + e.getMessage());
             e.printStackTrace();
         }
@@ -343,30 +331,28 @@ public class RegController {
                 try (FileOutputStream fos = new FileOutputStream(filePath)) {
 
                     fos.write(image);
-                }
-                catch (IOException e) {
+                } catch (IOException e) {
                     System.out.println("Error writing image file: " + e.getMessage());
                     e.printStackTrace();
                 }
             }
 
-            if(account.getStudentIdCardPic()!=null){
+            if (account.getStudentIdCardPic() != null) {
                 saveIdentity(account.getStudentIdCardPic(), accountFolder, account);
-            }
-            else if(account.getPVCPic()!=null){
+            } else if (account.getPVCPic() != null) {
                 saveIdentity(account.getPVCPic(), accountFolder, account);
             }
         }
     }
-    public void saveIdentity(byte[] identity, String accountFolder, Register account){
+
+    public void saveIdentity(byte[] identity, String accountFolder, Register account) {
 
         String filePath = accountFolder + account.getName() + " identity.jpg";
 
         try (FileOutputStream fos = new FileOutputStream(filePath)) {
 
             fos.write(identity);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             System.out.println("Error writing image file: " + e.getMessage());
             e.printStackTrace();
         }

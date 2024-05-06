@@ -7,6 +7,7 @@ import com.shahriar.CSE_Alumni_backend.Repos.UserDTOInterface;
 import com.shahriar.CSE_Alumni_backend.Repos.UsertrackRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +29,9 @@ public class RegService {
 
     @Autowired
     private TokenInterface tokenInterface;
+
+    @Autowired
+    private RequestInterceptorService requestInterceptorService;
 
     public void saveToken(String email, String token, LocalDateTime timeout) {
 
@@ -197,11 +201,13 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
     }
 
 
-    public String updateAccount(String email, String name, String password, String role, MultipartFile profilePic,
+    public String updateAccount(String name, String password, String role, MultipartFile profilePic,
                                 String studentId, MultipartFile studentIdCard,
                                 String graduationYear, MultipartFile pvc
     ) {
         try {
+
+            String email = requestInterceptorService.getTokenEmailUsedToOtherClass();
 
             Optional<Register> existingAccountOptional = regRepoIF.findByEmail(email);
             Register existingAccount = existingAccountOptional.get();
@@ -235,7 +241,9 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
 
     }
 
-    public String deleteAccount(String email) {
+    public String deleteAccount() {
+
+        String email = requestInterceptorService.getTokenEmailUsedToOtherClass();
 
         Register existingAcc = regRepoIF.findByEmail(email).get();
 
@@ -455,13 +463,25 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
             return 3;
         }
     }
-        public void logout (String email){
 
-            UserTrack userTrack = usertrackRepo.findByEmail(email);
+
+        public void logout (){
+
+            String emailFromToken = requestInterceptorService.getTokenEmailUsedToOtherClass();
+            System.out.println(emailFromToken);
+
+            UserTrack userTrack = usertrackRepo.findByEmail(emailFromToken);
             System.out.println(userTrack);
 
             userTrack.setStatus(3);
             usertrackRepo.save(userTrack);
+
+            // Destroying Token
+
+            List<Token> expiredTokens = tokenInterface.findExpiredTokens(LocalDateTime.now());
+            if (!expiredTokens.isEmpty()) {
+                tokenInterface.deleteAll(expiredTokens);
+            }
 
             //currentlyLoggedInUserEmail = null;
         }
@@ -494,12 +514,16 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
             return false;
         }
 
-        public void adminLogout (String email){
+        public void adminLogout (){
 
             UserTrack adminUserTrack = usertrackRepo.findByEmail("CUETCSE@admin.cuet.ac.bd");
 
             adminUserTrack.setStatus(3);
             usertrackRepo.save(adminUserTrack);
-        }
 
+            List<Token> expiredTokens = tokenInterface.findExpiredTokens(LocalDateTime.now());
+            if (!expiredTokens.isEmpty()) {
+                tokenInterface.deleteAll(expiredTokens);
+            }
+        }
     }
