@@ -28,10 +28,6 @@ public class Admin {
     private RegService regService;
 
 
-    public void forTesting(){
-        System.out.println("Tested...");
-    }
-
 
 
     @PostMapping("/public/adminLogin")
