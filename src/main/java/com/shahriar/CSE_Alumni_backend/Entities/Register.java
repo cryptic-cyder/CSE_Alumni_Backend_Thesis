@@ -59,13 +59,6 @@ public class Register {
         this.password = password;
     }
 
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
 
     public byte[] getProfilePic() {
         return profilePic;
@@ -91,13 +84,6 @@ public class Register {
         this.studentId = studentId;
     }
 
-    public byte[] getStudentIdCardPic() {
-        return studentIdCardPic;
-    }
-
-    public void setStudentIdCardPic(byte[] studentIdCardPic) {
-        this.studentIdCardPic = studentIdCardPic;
-    }
 
     public String getGraduationYear() {
         return graduationYear;
@@ -107,17 +93,9 @@ public class Register {
         this.graduationYear = graduationYear;
     }
 
-    public byte[] getPVCPic() {
-        return PVCPic;
-    }
+    public byte[] getIdentity() {return identity;}
 
-    public void setPVCPic(byte[] PVCPic) {
-        this.PVCPic = PVCPic;
-    }
-
-
-
-
+    public void setIdentity(byte[] identity) {this.identity = identity;}
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -128,7 +106,6 @@ public class Register {
     private String email;
 
     private String password;
-    private String role;
 
     @Lob
     @Column(length = 10000000)
@@ -138,19 +115,16 @@ public class Register {
     @Column(nullable = false)
     private UserStatus userStatus = UserStatus.PENDING;
 
+    @Lob
+    @Column(length = 10000000)
+    private byte[] identity;
 
 
     //Student specific info
     private String studentId;
 
-    @Lob
-    @Column(length = 10000000)
-    private byte[] studentIdCardPic;
-
 
     //Alumnus specific info
     private String graduationYear;
-    @Lob
-    @Column(length = 10000000)
-    private byte[] PVCPic;
+
 }

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+</head>
+<body>
+<h2>Login</h2>
+<form action="/public/adminLogin" method="post">
+    <div>
+        <label for="email">Email:</label>
+        <input type="text" id="email" name="adminEmail" required>
+    </div>
+    <div>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="adminPassword" required>
+    </div>
+    <button type="submit">Login</button>
+</form>
+</body>
+</html>
+
+
+
+
+
+
+
+
+<!--<!DOCTYPE html>-->
+<!--<html xmlns:th="http://www.thymeleaf.org">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <title>Alumni Login</title>-->
+<!--    <style>-->
+<!--        body {-->
+<!--            font-family: Arial, sans-serif;-->
+<!--            background-color: #3f4145;-->
+<!--            margin: 0;-->
+<!--            padding: 0;-->
+<!--            display: flex;-->
+<!--            justify-content: center;-->
+<!--            align-items: center;-->
+<!--            height: 110vh;-->
+<!--        }-->
+
+<!--        .container {-->
+<!--            background-color: #f5f8f9;-->
+<!--            border-radius: 20px;-->
+<!--            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);-->
+<!--            padding: 3px;-->
+<!--            width: 600px;-->
+<!--        }-->
+
+<!--        h1 {-->
+<!--            text-align: center;-->
+<!--        }-->
+
+<!--        form {-->
+<!--            display: flex;-->
+<!--            flex-direction: column;-->
+<!--        }-->
+
+<!--        .form-group {-->
+<!--            margin-bottom: 50px;-->
+<!--        }-->
+
+<!--        label {-->
+<!--            font-weight: bold;-->
+<!--        }-->
+
+<!--        input {-->
+<!--            padding: 8px;-->
+<!--            border: 1px solid #ced4da;-->
+<!--            border-radius: 4px;-->
+<!--        }-->
+
+<!--        button {-->
+<!--            background-color: #007bff;-->
+<!--            color: #ffffff;-->
+<!--            border: none;-->
+<!--            padding: 10px 20px;-->
+<!--            border-radius: 4px;-->
+<!--            cursor: pointer;-->
+<!--            transition: background-color 0.3s;-->
+<!--        }-->
+
+<!--        button:hover {-->
+<!--            background-color: #0056b3;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<main>-->
+<!--    <div class="container">-->
+<!--        <section class="d-flex flex-column align-items-center justify-content-center py-4">-->
+<!--            <div class="container">-->
+<!--                <div class="row justify-content-center">-->
+<!--                    <div class="col-md-8 d-flex flex-column align-items-center justify-content-center">-->
+<!--                        <div class="card mb-3">-->
+<!--                            <div class="card-body">-->
+<!--                                <div class="mt-4 mb-4">-->
+<!--                                    <div class="d-flex justify-content-center mb-2">-->
+<!--                                        <img src="https://erp.uttarauniversity.edu.bd/temp/assets/img/uu_brand_logo.png" style="height: 80px;" alt="logo"/>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                                <div class="row mt-4">-->
+<!--                                    <div class="col-md-6">-->
+<!--                                        <div class="card">-->
+<!--                                            <div class="card-body">-->
+<!--                                                <h6 style="font-weight: bold; margin-top: 10px; margin-bottom: 20px; text-align: center; font-size: 20px;">Alumni Login</h6>-->
+<!--                                                <form class="row g-3 form-prevent" th:action="@{/public/adminLogin}" method="post">-->
+<!--                                                    <input type="hidden" name="_token" value="F5pwaZ8hSNWvzWto3DXEeUrUk3qTaZBEUq9jzyhC"/>-->
+
+<!--                                                    <div class="col-12">-->
+<!--                                                        <div class="form-floating">-->
+<!--                                                            <input type="text" class="form-control" id="email" name="adminEmail" placeholder="Enter userEmail" required/>-->
+<!--                                                            <label for="email">Alumni userEmail</label>-->
+<!--                                                        </div>-->
+<!--                                                    </div>-->
+
+
+<!--                                                    <div class="col-12">-->
+<!--                                                        <div class="form-floating">-->
+<!--                                                            <input type="password" class="form-control" id="password" name="adminPassword" placeholder="Enter Password" required/>-->
+<!--                                                            <label for="password">Password</label>-->
+<!--                                                        </div>-->
+<!--                                                    </div>-->
+<!--                                                    <div class="col-12">-->
+<!--                                                        <button class="btn btn-primary w-100 form-prevent-multiple-submit" type="submit" style="background: #1D45B5; border: 1px solid #1D45B5;">LOGIN</button>-->
+<!--                                                    </div>-->
+<!--                                                    <div class="col-12">-->
+<!--                                                        <p class="small mb-0">-->
+<!--                                                            <i class="bi bi-lock-fill"></i> Forgot your password? <a href="https://erp.uttarauniversity.edu.bd/alumni-forget-password" class="font-weight-bold">Click here</a>-->
+<!--                                                        </p>-->
+<!--                                                        <p class="small mb-0">-->
+<!--                                                            <i class="bi bi-people-fill"></i> Not registered yet as alumni? <a href="/Alumni-registration"><span class="font-weight-bold base-color">Register Here</span></a>-->
+<!--                                                        </p>-->
+<!--                                                    </div>-->
+<!--                                                </form>-->
+<!--                                            </div>-->
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                    <div class="col-md-6">-->
+<!--                                        <h6 style="font-weight: bold; margin-top: 10px; text-align: center; font-size: 20px; margin-bottom: 0;">Alumni Database Management</h6>-->
+<!--                                        <p style="font-size: 14px; font-weight: bold; text-align: center; margin: 0;">Office of Alumni Affairs - Uttara University</p>-->
+<!--                                        <p style="font-size: 13px; font-weight: bold; margin: 0;">Instructions:</p>-->
+<!--                                        <p style="font-size: 13px; margin: 0;">If you are a Uttara University alumnus/alumna and don't have your login details, then please complete the <a href="https://erp.uttarauniversity.edu.bd/alumni-registration" class="font-weight-bold">registration</a> process. After that, we will verify your details and send you the login details.</p>-->
+<!--                                        <p style="font-size: 13px; margin: 0;">If you already have your login details, then login into your account and access your profile information.</p>-->
+<!--                                        <p style="font-size: 13px; font-weight: bold; margin: 0;">Contact:</p>-->
+<!--                                        <p style="font-size: 13px; margin: 0;">For any further query please contact us at:</p>-->
+<!--                                        <ul>-->
+<!--                                            <li style="font-size: 13px; margin: 0;">Alumni Affairs Division, Uttara University</li>-->
+<!--                                            <li style="font-size: 13px; margin: 0;">Phone: +8801872607359</li>-->
+<!--                                            <li style="font-size: 13px; margin: 0;">Email: alumni@uttarauniversity.edu.bd</li>-->
+<!--                                            <li style="font-size: 13px; margin: 0;">Office Address: 2<sup>nd</sup> Floor, Uttara University</li>-->
+<!--                                        </ul>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </section>-->
+<!--    </div>-->
+<!--</main>-->
+<!--&lt;!&ndash; Add your scripts here &ndash;&gt;-->
+<!--</body>-->
+<!--</html>-->

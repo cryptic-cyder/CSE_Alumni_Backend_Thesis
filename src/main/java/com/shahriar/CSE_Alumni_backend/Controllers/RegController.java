@@ -19,7 +19,7 @@ import java.util.*;
 import java.util.zip.DataFormatException;
 
 //@RequestMapping("api/v1")
-@CrossOrigin(origins = "http://localhost:3000")
+
 @RestController
 public class RegController {
 
@@ -64,7 +64,7 @@ public class RegController {
     @GetMapping("/login/oauth2")
     public String handleGoogleOAuthCallback(@RequestParam("code") String authorizationCode) {
         // Process the authorization code, exchange for tokens, and fetch user details
-        UserDTO userInfo = regService.getUserInfo(authorizationCode);
+        TokenDto userInfo = regService.getUserInfo(authorizationCode);
         System.out.println("OKKKKKKKKKKKKKKK");
         return "Account is created successfully....";
 
@@ -94,16 +94,15 @@ public class RegController {
     @PostMapping("/public/requestForAccount")
     public ResponseEntity<?> requestForCreatingAccToAdmin(
             @RequestParam("userName") String name,
-            @RequestParam("userEmail") String email,
+            @RequestParam(value = "userEmail") String email,
             @RequestParam("passwordOfUser") String password,
-            @RequestParam("roleOfUser") String role,
             @RequestParam("profilePicOfUser") MultipartFile profilePic,
 
-            @RequestParam(value = "studentIdCard", required = false) String studentId,
-            @RequestParam(value = "IdCardPic", required = false) MultipartFile studentIdCard,
-
+            @RequestParam(value = "studentId", required = false) String studentId,
             @RequestParam(value = "YearOfGraduation", required = false) String graduationYear,
-            @RequestParam(value = "pvc", required = false) MultipartFile pvc
+
+            @RequestParam(value = "identityPic") MultipartFile identity
+
     )
             throws IOException {
 
@@ -117,9 +116,9 @@ public class RegController {
         }*/
 
         if (!regService.isAccountExistsAlready(email)) {
-            String response = regService.requestForAcc(name, email, password, role, profilePic,
-                    studentId, studentIdCard,
-                    graduationYear, pvc,
+            String response = regService.requestForAcc(name, email, password, profilePic,
+                    studentId, identity,
+                    graduationYear,
                     UserStatus.PENDING
             );
 
@@ -182,7 +181,7 @@ public class RegController {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         // Concatenate the email and current time to make the token unique
-        token += "_" + email + "_" + LocalDateTime.now().plusMinutes(3).format(formatter);
+        token += "_" + email + "_" + LocalDateTime.now().plusMinutes(10).format(formatter);
 
         return token;
     }
@@ -223,47 +222,49 @@ public class RegController {
     // private API's
 
 
-    @GetMapping("/UserLogout")
-    public ResponseEntity<?> logout() {
-
-        regService.logout();
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body("User logged out");
-    }
-
-
-    @PostMapping("/updateAcc")
-    public ResponseEntity<?> updateAccount(
-            @RequestParam(value = "Name",required = false) String name,
-            @RequestParam(value = "password", required = false) String password,
-            @RequestParam(value = "role",required = false) String role,
-            @RequestParam(value = "profile",required = false) MultipartFile profilePic,
-            @RequestParam(value="studentId" , required = false) String studentId,
-            @RequestParam(value = "studentIdCard" ,required = false) MultipartFile studentIdCard,
-            @RequestParam(value = "graduationYear",required = false) String graduationYear,
-            @RequestParam(value = "PVCPic",required = false) MultipartFile pvc
-    ) {
-
-        String result = regService.updateAccount(name, password, role, profilePic,
-                studentId, studentIdCard, graduationYear, pvc);
-
-        if (result.equals("No Account found"))
-            return new ResponseEntity<>("No account exists with this email...", HttpStatus.BAD_REQUEST);
-
-        return new ResponseEntity<>(result, HttpStatus.OK);
-    }
+//    @GetMapping("/UserLogout")
+//    public ResponseEntity<?> logout() {
+//
+//        regService.logout();
+//
+//        return ResponseEntity
+//                .status(HttpStatus.OK)
+//                .body("User logged out");
+//    }
 
 
-    @DeleteMapping("/deleteAcc")
-    public ResponseEntity<?> deleteAccount() {
-
-
-        String result = regService.deleteAccount();
-
-        return new ResponseEntity<>(result, HttpStatus.OK);
-    }
+//    @PostMapping("/updateAcc")
+//    public ResponseEntity<?> updateAccount(
+//            @RequestParam(value = "Name",required = false) String name,
+//            @RequestParam(value = "email",required = false) String email,
+//            @RequestParam(value = "password", required = false) String password,
+//            @RequestParam(value = "profile",required = false) MultipartFile profilePic,
+//
+//            @RequestParam(value="studentId" , required = false) String studentId,
+//            @RequestParam(value = "graduationYear",required = false) String graduationYear,
+//
+//            @RequestParam(value = "identity" ,required = false) MultipartFile identity
+//    ) {
+//
+//        String result = regService.updateAccount(name,email, password, profilePic,
+//                identity,studentId,
+//                graduationYear);
+//
+//        if (result.equals("No Account found"))
+//            return new ResponseEntity<>("No account exists with this email...", HttpStatus.BAD_REQUEST);
+//
+//        return new ResponseEntity<>(result, HttpStatus.OK);
+//    }
+//
+//
+//    @DeleteMapping("/deleteAcc")
+//    public ResponseEntity<?> deleteAccount() {
+//
+//
+//        String result = regService.deleteAccount();
+//
+//        return new ResponseEntity<>(result, HttpStatus.OK);
+//    }
 
 
 
@@ -295,10 +296,8 @@ public class RegController {
 
         }
 
-        if (account.getStudentIdCardPic() != null) {
-            saveIdentityList(account.getStudentIdCardPic(), accountFolder, account);
-        } else if (account.getPVCPic() != null) {
-            saveIdentityList(account.getPVCPic(), accountFolder, account);
+        if (account.getIdentity() != null) {
+            saveIdentityList(account.getIdentity(), accountFolder, account);
         }
     }
 
@@ -337,10 +336,8 @@ public class RegController {
                 }
             }
 
-            if (account.getStudentIdCardPic() != null) {
-                saveIdentity(account.getStudentIdCardPic(), accountFolder, account);
-            } else if (account.getPVCPic() != null) {
-                saveIdentity(account.getPVCPic(), accountFolder, account);
+            if (account.getIdentity() != null) {
+                saveIdentity(account.getIdentity(), accountFolder, account);
             }
         }
     }

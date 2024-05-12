@@ -3,7 +3,6 @@ package com.shahriar.CSE_Alumni_backend.Services;
 import com.shahriar.CSE_Alumni_backend.Entities.*;
 import com.shahriar.CSE_Alumni_backend.Repos.RegRepoIF;
 import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
-import com.shahriar.CSE_Alumni_backend.Repos.UserDTOInterface;
 import com.shahriar.CSE_Alumni_backend.Repos.UsertrackRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -24,14 +23,14 @@ public class RegService {
     @Autowired
     private RegRepoIF regRepoIF;
 
-    @Autowired
-    private UserDTOInterface userDTOInterface;
+//    @Autowired
+//    private UserDTOInterface userDTOInterface;
 
     @Autowired
     private TokenInterface tokenInterface;
 
-    @Autowired
-    private RequestInterceptorService requestInterceptorService;
+    //@Autowired
+    //private RequestInterceptorService requestInterceptorService;
 
     public void saveToken(String email, String token, LocalDateTime timeout) {
 
@@ -97,7 +96,7 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
 
         // Storing OTP
 
-        /*UserDTO user = new UserDTO();
+        /*TokenDto user = new TokenDto();
 
         user.setGmail(recipientEmail);
         user.setOTP(otp);
@@ -107,7 +106,7 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
 
     /*public void verifyOTP(String gmail, String OTP){
 
-        UserDTO userDTO = userDTOInterface.findByGmail(gmail);
+        TokenDto userDTO = userDTOInterface.findByGmail(gmail);
 
         if(userDTO.getOTP().equals(OTP)){
             // Create Account
@@ -121,18 +120,18 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public UserDTO getUserInfo(String authorizationCode) {
+    public TokenDto getUserInfo(String authorizationCode) {
         // Exchange authorization code for access token
         OAuth2AuthorizedClient authorizedClient = authorizedClientService.loadAuthorizedClient("google", authorizationCode);
 
         OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
 
-        GoogleUserInfo googleUserInfo = fetchUserInfoFromGoogle(accessToken);
+        TokenValidation googleUserInfo = fetchUserInfoFromGoogle(accessToken);
 
         return convertToUserDTO(googleUserInfo);
     }
 
-    private GoogleUserInfo fetchUserInfoFromGoogle(OAuth2AccessToken accessToken) {
+    private TokenValidation fetchUserInfoFromGoogle(OAuth2AccessToken accessToken) {
 
         // Construct request to fetch user info from Google
         String userInfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo";
@@ -141,20 +140,20 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
         HttpEntity<String> requestEntity = new HttpEntity<>(headers);
 
         // Send GET request to Google's user info endpoint
-        ResponseEntity<GoogleUserInfo> responseEntity = restTemplate.exchange(
+        ResponseEntity<TokenValidation> responseEntity = restTemplate.exchange(
                 userInfoUrl,
                 HttpMethod.GET,
                 requestEntity,
-                GoogleUserInfo.class
+                TokenValidation.class
         );
 
         // Extract user info from the response
         return responseEntity.getBody();
     }
 
-    private UserDTO convertToUserDTO(GoogleUserInfo googleUserInfo) {
+    private TokenDto convertToUserDTO(TokenValidation googleUserInfo) {
 
-        UserDTO userDTO = new UserDTO();
+        TokenDto userDTO = new TokenDto();
 
         userDTO.setUserName(googleUserInfo.getName());
         userDTO.setGmail(googleUserInfo.getEmail());
@@ -167,32 +166,30 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
     }*/
 
 
-    public String requestForAcc(String name, String email, String password, String role, MultipartFile profilePic,
-                                String studentId, MultipartFile studentIdCard,
-                                String graduationYear, MultipartFile pvc,
+    public String requestForAcc(String name, String email, String password, MultipartFile profilePic,
+                                String studentId, MultipartFile identity,
+                                String graduationYear,
                                 UserStatus status) {
         try {
 
-            byte[] studentIdBytes = (studentIdCard != null) ? (studentIdCard.getBytes()) : null;
+            byte[] identityBytes = (identity != null) ? (identity.getBytes()) : null;
             byte[] profilePicBytes = (profilePic != null) ? (profilePic.getBytes()) : null;
-            byte[] pvcBytes = (pvc != null) ? (pvc.getBytes()) : null;
+
 
             Register register = Register.builder()
                     .name(name)
                     .email(email)
                     .password(password)
-                    .role(role)
                     .studentId(studentId)
                     .graduationYear(graduationYear)
-                    .studentIdCardPic(studentIdBytes)
+                    .identity(identityBytes)
                     .profilePic(profilePicBytes)
-                    .PVCPic(pvcBytes)
                     .userStatus(status)
                     .build();
 
             Register savedRegister = regRepoIF.save(register);
 
-            return (savedRegister != null) ? "Account is waiting for approval: " + role :
+            return (savedRegister != null) ? "Account is waiting for approval: " + email :
                     "Error!!! Something went wrong... Account not created";
         } catch (IOException e) {
             e.printStackTrace(); // Log the exception
@@ -201,64 +198,63 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
     }
 
 
-    public String updateAccount(String name, String password, String role, MultipartFile profilePic,
-                                String studentId, MultipartFile studentIdCard,
-                                String graduationYear, MultipartFile pvc
-    ) {
-        try {
+//    public String updateAccount( String name, String updatedEmail, String password, MultipartFile profilePic,
+//                                 MultipartFile identity,String studentId,
+//                                 String graduationYear
+//    ) {
+//        try {
+//
+//            String currentEmail = requestInterceptorService.getTokenEmailUsedToOtherClass();
+//
+//            Optional<Register> existingAccountOptional = regRepoIF.findByEmail(currentEmail);
+//            Register existingAccount = existingAccountOptional.get();
+//
+//            if (existingAccount == null)
+//                return "No Account found";
+//
+//            byte[] studentIdCardBytes = identity != null ? identity.getBytes() : existingAccount.getIdentity();
+//            byte[] profilePicBytes = profilePic != null ? profilePic.getBytes() : existingAccount.getProfilePic();
+//
+//            // Update the fields with values from the request if they are not null, otherwise keep the existing values
+//            existingAccount.setName(name != null ? name : existingAccount.getName());
+//            existingAccount.setEmail(updatedEmail != null ? updatedEmail : existingAccount.getEmail());
+//            existingAccount.setPassword(password != null ? password : existingAccount.getPassword());
+//
+//            existingAccount.setStudentId(studentId != null ? studentId : existingAccount.getStudentId());
+//            existingAccount.setGraduationYear(graduationYear != null ? graduationYear : existingAccount.getGraduationYear());
+//            existingAccount.setIdentity(studentIdCardBytes);
+//            existingAccount.setProfilePic(profilePicBytes);
+//
+//
+//            Register temp = regRepoIF.save(existingAccount);
+//
+//            return (temp != null) ? "Account changes are saved: " + updatedEmail :
+//                    "Error!!! Something went wrong...";
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return "Error!!! Something went wrong while processing the request";
+//        }
+//
+//    }
 
-            String email = requestInterceptorService.getTokenEmailUsedToOtherClass();
-
-            Optional<Register> existingAccountOptional = regRepoIF.findByEmail(email);
-            Register existingAccount = existingAccountOptional.get();
-
-            if (existingAccount == null)
-                return "No Account found";
-
-            byte[] studentIdCardBytes = studentIdCard != null ? studentIdCard.getBytes() : existingAccount.getStudentIdCardPic();
-            byte[] profilePicBytes = profilePic != null ? profilePic.getBytes() : existingAccount.getProfilePic();
-            byte[] pvcBytes = pvc != null ? pvc.getBytes() : existingAccount.getPVCPic();
-
-            // Update the fields with values from the request if they are not null, otherwise keep the existing values
-            existingAccount.setName(name != null ? name : existingAccount.getName());
-            existingAccount.setEmail(email != null ? email : existingAccount.getEmail());
-            existingAccount.setPassword(password != null ? password : existingAccount.getPassword());
-            existingAccount.setRole(role != null ? role : existingAccount.getRole());
-            existingAccount.setStudentId(studentId != null ? studentId : existingAccount.getStudentId());
-            existingAccount.setGraduationYear(graduationYear != null ? graduationYear : existingAccount.getGraduationYear());
-            existingAccount.setStudentIdCardPic(studentIdCardBytes);
-            existingAccount.setProfilePic(profilePicBytes);
-            existingAccount.setPVCPic(pvcBytes);
-
-            Register temp = regRepoIF.save(existingAccount);
-
-            return (temp != null) ? "Account changes are saved: " + role :
-                    "Error!!! Something went wrong...";
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "Error!!! Something went wrong while processing the request";
-        }
-
-    }
-
-    public String deleteAccount() {
-
-        String email = requestInterceptorService.getTokenEmailUsedToOtherClass();
-
-        Register existingAcc = regRepoIF.findByEmail(email).get();
-
-        if (existingAcc == null)
-            return "No such account exists";
-
-        regRepoIF.delete(existingAcc);
-
-        UserTrack existingUserTrack = usertrackRepo.findByEmail(email);
-
-        if (existingUserTrack != null)
-            usertrackRepo.delete(existingUserTrack);
-
-        return "Your account is deleted successfully";
-    }
+//    public String deleteAccount() {
+//
+//        String email = requestInterceptorService.getTokenEmailUsedToOtherClass();
+//
+//        Register existingAcc = regRepoIF.findByEmail(email).get();
+//
+//        if (existingAcc == null)
+//            return "No such account exists";
+//
+//        regRepoIF.delete(existingAcc);
+//
+//        UserTrack existingUserTrack = usertrackRepo.findByEmail(email);
+//
+//        if (existingUserTrack != null)
+//            usertrackRepo.delete(existingUserTrack);
+//
+//        return "Your account is deleted successfully";
+//    }
 
 
     public boolean isAccountExistsAlready(String email) {
@@ -465,26 +461,26 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
     }
 
 
-        public void logout (){
-
-            String emailFromToken = requestInterceptorService.getTokenEmailUsedToOtherClass();
-            System.out.println(emailFromToken);
-
-            UserTrack userTrack = usertrackRepo.findByEmail(emailFromToken);
-            System.out.println(userTrack);
-
-            userTrack.setStatus(3);
-            usertrackRepo.save(userTrack);
-
-            // Destroying Token
-
-            List<Token> expiredTokens = tokenInterface.findExpiredTokens(LocalDateTime.now());
-            if (!expiredTokens.isEmpty()) {
-                tokenInterface.deleteAll(expiredTokens);
-            }
-
-            //currentlyLoggedInUserEmail = null;
-        }
+//        public void logout (){
+//
+//            String emailFromToken = requestInterceptorService.getTokenEmailUsedToOtherClass();
+//            System.out.println(emailFromToken);
+//
+//            UserTrack userTrack = usertrackRepo.findByEmail(emailFromToken);
+//            System.out.println(userTrack);
+//
+//            userTrack.setStatus(3);
+//            usertrackRepo.save(userTrack);
+//
+//            // Destroying Token
+//
+//            List<Token> expiredTokens = tokenInterface.findExpiredTokens(LocalDateTime.now());
+//            if (!expiredTokens.isEmpty()) {
+//                tokenInterface.deleteAll(expiredTokens);
+//            }
+//
+//            //currentlyLoggedInUserEmail = null;
+//        }
 
 
         public UserTrack trackFindByEmail (String email){
@@ -495,7 +491,7 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
         public boolean adminLogin (String email, String password){
 
             if (email.equals("CUETCSE@admin.cuet.ac.bd") && password.equals("1234")) {
-
+                //System.out.println("OKKKKKK");
                 if (!usertrackRepo.existsByEmail(email)) {
                     UserTrack AdminUserTrack = UserTrack.builder()
                             .email(email)
@@ -521,7 +517,8 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
             adminUserTrack.setStatus(3);
             usertrackRepo.save(adminUserTrack);
 
-            List<Token> expiredTokens = tokenInterface.findExpiredTokens(LocalDateTime.now());
+            List<Token> expiredTokens = tokenInterface.findByEmail("CUETCSE@admin.cuet.ac.bd");
+            System.out.println("Expired tokens are : "+expiredTokens);
             if (!expiredTokens.isEmpty()) {
                 tokenInterface.deleteAll(expiredTokens);
             }

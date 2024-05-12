@@ -1,19 +1,18 @@
-package com.shahriar.CSE_Alumni_backend.Configuration;
-
-import com.shahriar.CSE_Alumni_backend.Services.RequestInterceptorService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-@Configuration
-public class WebMvcConfig implements WebMvcConfigurer {
-
-    @Autowired
-    private RequestInterceptorService requestInterceptorService;
-
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(requestInterceptorService).addPathPatterns("/**");
-    }
-}
+//package com.shahriar.CSE_Alumni_backend.Configuration;
+//
+//import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.context.annotation.Configuration;
+//import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+//import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+//
+//@Configuration
+//public class WebMvcConfig implements WebMvcConfigurer {
+//
+//    @Autowired
+//    private RequestInterceptorService requestInterceptorService;
+//
+//    @Override
+//    public void addInterceptors(InterceptorRegistry registry) {
+//        registry.addInterceptor(requestInterceptorService).addPathPatterns("/**");
+//    }
+//}

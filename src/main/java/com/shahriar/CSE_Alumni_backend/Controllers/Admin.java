@@ -1,11 +1,18 @@
 package com.shahriar.CSE_Alumni_backend.Controllers;
 
 
+import com.shahriar.CSE_Alumni_backend.Entities.AdminRequest;
+import com.shahriar.CSE_Alumni_backend.Entities.LoginResponse;
 import com.shahriar.CSE_Alumni_backend.Entities.Register;
+import com.shahriar.CSE_Alumni_backend.Entities.TokenDto;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
+import com.shahriar.CSE_Alumni_backend.Services.TokenValidation;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.http.HttpStatus;
+
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.io.FileOutputStream;
@@ -13,7 +20,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:3000")
+
 @RestController
 public class Admin {
 
@@ -21,44 +28,69 @@ public class Admin {
     private RegService regService;
 
 
+
     @PostMapping("/public/adminLogin")
-    public ResponseEntity<?> adminLogin(@RequestParam("email") String emailOfAdmin,
-                                        @RequestParam("password") String passwordOfAdmin) {
+    public ResponseEntity<?> adminLogin(@RequestParam("email") String adminEmail,
+                                        @RequestParam("password") String adminPassword) {
+        System.out.println("Hitted api");
 
+//        String adminEmail = adminRequest.getAdminEmail();
+//        String adminPassword = adminRequest.getAdminPassword();
 
-        if (regService.adminLogin(emailOfAdmin, passwordOfAdmin)) {
+        if (regService.adminLogin(adminEmail, adminPassword)) {
 
-            String token = new RegController().generateToken(emailOfAdmin);
+           String token = new RegController().generateToken(adminEmail);
 
-            regService.saveToken(emailOfAdmin, token, LocalDateTime.now().plusMinutes(3));
+            regService.saveToken(adminEmail, token, LocalDateTime.now().plusMinutes(10));
 
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body("Admin login successful...");
+            LoginResponse response = new LoginResponse();
+            response.setMessage("Admin login successful");
+            response.setToken(token);
+
+            //System.out.println(response);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
         }
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body("Email or Password is incorrect...Access denied...Please try again");
+        LoginResponse errorResponse = new LoginResponse();
+        errorResponse.setMessage("Email or Password is incorrect. Access denied. Please try again.");
 
+       // System.out.println(errorResponse);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
 
-    @GetMapping("/pendingRequests")
-    public ResponseEntity<?> getPendingRegistrations() {
 
-        if (regService.returnAdminStatus() == 1) {
-            List<Register> pendingUsers = regService.getPendingUsers();
+    // Handler for OPTIONS requests
+//    @RequestMapping(value = "/public/adminLogin", method = RequestMethod.OPTIONS)
+//    public ResponseEntity<?> handleOptionsRequest() {
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.add("Access-Control-Allow-Origin", "http://localhost:3000");
+//        headers.add("Access-Control-Allow-Methods", "POST");
+//        headers.add("Access-Control-Allow-Headers", "Content-Type");
+//        headers.add("Access-Control-Max-Age", "3600");
+//        return ResponseEntity.ok().headers(headers).build();
+//    }
 
-            if (pendingUsers == null) {
-                return new ResponseEntity<>("No requests pending", HttpStatus.OK);
-            }
 
-            saveImagesOfPendingRequest(pendingUsers);
+    @PostMapping("/pendingRequests")
+    public ResponseEntity<?> getPendingRegistrations(@RequestBody TokenDto authorizationHeader) {
 
-            return new ResponseEntity<>(pendingUsers, HttpStatus.OK);
+
+       // System.out.println("Token is : "+authorizationHeader.getToken());
+
+        if(new TokenValidation().isTokenValid(authorizationHeader.getToken())){
+            //System.out.println("Token is validated...");
+                List<Register> pendingUsers = regService.getPendingUsers();
+            //System.out.println(pendingUsers.size());
+                if (pendingUsers == null) {
+                    return new ResponseEntity<>("No requests pending", HttpStatus.OK);
+                }
+
+                saveImagesOfPendingRequest(pendingUsers);
+
+                return new ResponseEntity<>(pendingUsers, HttpStatus.OK);
         }
 
-        return new ResponseEntity<>("Access denied...login as admin first", HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>("Access denied...You are not logged in or token expired", HttpStatus.UNAUTHORIZED);
     }
 
 
@@ -142,12 +174,10 @@ public class Admin {
                 }
             }
 
-            if(account.getStudentIdCardPic()!=null){
-               saveIdentity(account.getStudentIdCardPic(), accountFolder, account);
+            if(account.getIdentity()!=null){
+               saveIdentity(account.getIdentity(), accountFolder, account);
             }
-            else if(account.getPVCPic()!=null){
-                saveIdentity(account.getPVCPic(), accountFolder, account);
-            }
+
         }
     }
     public void saveIdentity(byte[] identity, String accountFolder, Register account){

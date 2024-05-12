@@ -1,4 +1,4 @@
-package com.shahriar.CSE_Alumni_backend.Services;
+package com.shahriar.CSE_Alumni_backend.Configuration;
 
 import com.shahriar.CSE_Alumni_backend.Entities.Token;
 import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-@Component
+
 public class RequestInterceptorService implements HandlerInterceptor {
 
     String tokenEmailUsedToOtherClass="";
@@ -32,14 +32,22 @@ public class RequestInterceptorService implements HandlerInterceptor {
         String requestURI = request.getRequestURI();
 
         if (isPublicUrl(requestURI)) {
+            System.out.println("This is public url....");
             return true; // Allow access to public URLs without token validation
         }
 
-        String token = extractToken(request);
+        //System.out.println("This is protected API...");
+
+        String token = extractTokenFromRequest(request);
+
+        System.out.println("Request is: " + request.toString());
+        System.out.println("Token is: " + token);
 
         boolean isValidToken = validateToken(token);
         //System.out.println(isValidToken);
         if (!isValidToken) {
+
+
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             try {
                 // Set response body with the custom message
@@ -59,8 +67,10 @@ public class RequestInterceptorService implements HandlerInterceptor {
         return requestURI.startsWith("/public/");
     }
 
-    private String extractToken(HttpServletRequest request) {
-        // Extract token from request headers
+    private String extractTokenFromRequest(HttpServletRequest request) {
+
+        //System.out.println(request);
+        // Extract token from the Authorization header
         String authorizationHeader = request.getHeader("Authorization");
 
         // Check if Authorization header is present and starts with "Bearer"
@@ -76,8 +86,6 @@ public class RequestInterceptorService implements HandlerInterceptor {
     @Autowired
     private TokenInterface tokenInterface;
 
-    //@Autowired
-    //private MyJwtSecret myJwtSecret;
 
     private boolean validateToken(String token) {
 
@@ -95,6 +103,8 @@ public class RequestInterceptorService implements HandlerInterceptor {
 
         return tokenFromDB.getEmail().equalsIgnoreCase(tokenEmail);
     }
+
+
 
     public String extractEmailFromToken(String token) {
 
@@ -126,3 +136,85 @@ public class RequestInterceptorService implements HandlerInterceptor {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//package com.shahriar.CSE_Alumni_backend.Configuration;
+//
+//import com.shahriar.CSE_Alumni_backend.Services.JwtTokenFilter;
+//
+//import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.beans.factory.annotation.Value;
+//import org.springframework.context.annotation.Bean;
+//import org.springframework.context.annotation.Configuration;
+//import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+//
+//import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+//import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+//
+//import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+//import org.springframework.security.crypto.password.PasswordEncoder;
+//import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+//import org.springframework.web.servlet.config.annotation.CorsRegistry;
+//import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+//
+//import javax.servlet.Filter;
+//
+//@Configuration
+//@EnableWebSecurity
+//public class CrosConfig extends WebSecurityConfigurerAdapter {
+//
+//    @Value("${app.allowedOrigins}")
+//    private String[] allowedOrigins;
+//
+//    @Autowired
+//    private JwtTokenFilter jwtTokenFilter;
+//
+//    @Override
+//    protected void configure(HttpSecurity http) throws Exception {
+//        http.csrf().disable()
+//                .authorizeRequests()
+//                .antMatchers("/public/**").permitAll() // Allow access to public endpoints without authentication
+//                .anyRequest().authenticated()
+//                .and()
+//                .addFilterBefore(new JwtTokenFilter(), Filter.class);
+//    }
+//
+//    @Bean
+//    public PasswordEncoder passwordEncoder() {
+//        return new BCryptPasswordEncoder();
+//    }
+//
+//    @Configuration
+//    public class CorsConfig implements WebMvcConfigurer {
+//        @Override
+//        public void addCorsMappings(CorsRegistry registry) {
+//            registry.addMapping("/**")
+//                    .allowedOrigins(allowedOrigins)
+//                    .allowedMethods("GET", "POST", "PUT", "DELETE")
+//                    .allowedHeaders("*")
+//                    .allowCredentials(true);
+//        }
+//    }
+//}
