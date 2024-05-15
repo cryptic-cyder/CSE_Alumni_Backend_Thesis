@@ -30,35 +30,35 @@ public class Admin {
 
 
 
-//    @PostMapping("/public/adminLogin")
-//    public ResponseEntity<?> adminLogin(@RequestParam("email") String adminEmail,
-//                                        @RequestParam("password") String adminPassword) {
-//        System.out.println("Hit api");
-//        //System.out.println("Trying to push github");
-//
-////        String adminEmail = adminRequest.getAdminEmail();
-////        String adminPassword = adminRequest.getAdminPassword();
-//
-//        if (regService.adminLogin(adminEmail, adminPassword)) {
-//
-//           String token = new RegController().generateToken(adminEmail);
-//
-//            regService.saveToken(adminEmail, token, LocalDateTime.now().plusMinutes(10));
-//
-//            LoginResponse response = new LoginResponse();
-//            response.setMessage("Admin login successful");
-//            response.setToken(token);
-//
-//            //System.out.println(response);
-//            return ResponseEntity.status(HttpStatus.OK).body(response);
-//        }
-//
-//        LoginResponse errorResponse = new LoginResponse();
-//        errorResponse.setMessage("Email or Password is incorrect. Access denied. Please try again.");
-//
-//       // System.out.println(errorResponse);
-//        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
-//    }
+    @PostMapping("/public/adminLogin")
+    public ResponseEntity<?> adminLogin(@RequestParam("email") String adminEmail,
+                                        @RequestParam("password") String adminPassword) {
+        System.out.println("Hit api");
+        //System.out.println("Trying to push github");
+
+//        String adminEmail = adminRequest.getAdminEmail();
+//        String adminPassword = adminRequest.getAdminPassword();
+
+        if (regService.adminLogin(adminEmail, adminPassword)) {
+
+           String token = new RegController().generateToken(adminEmail);
+
+            regService.saveToken(adminEmail, token, LocalDateTime.now().plusMinutes(10));
+
+            LoginResponse response = new LoginResponse();
+            response.setMessage("Admin login successful");
+            response.setToken(token);
+
+            //System.out.println(response);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        }
+
+        LoginResponse errorResponse = new LoginResponse();
+        errorResponse.setMessage("Email or Password is incorrect. Access denied. Please try again.");
+
+       // System.out.println(errorResponse);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
 
 
     // Handler for OPTIONS requests
