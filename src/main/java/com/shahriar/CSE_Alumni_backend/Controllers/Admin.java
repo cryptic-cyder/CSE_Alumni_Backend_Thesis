@@ -33,7 +33,8 @@ public class Admin {
     @PostMapping("/public/adminLogin")
     public ResponseEntity<?> adminLogin(@RequestParam("email") String adminEmail,
                                         @RequestParam("password") String adminPassword) {
-        System.out.println("Hitted api");
+        System.out.println("Hit api");
+        System.out.println("Trying to push github");
 
 //        String adminEmail = adminRequest.getAdminEmail();
 //        String adminPassword = adminRequest.getAdminPassword();
