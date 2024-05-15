@@ -28,9 +28,6 @@ public class Admin {
     private RegService regService;
 
 
-    public void testing(){
-        System.out.println("Testing");
-    }
 
 
     @PostMapping("/public/adminLogin")
