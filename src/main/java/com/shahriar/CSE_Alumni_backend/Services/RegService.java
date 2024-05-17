@@ -1,3 +1,40 @@
+/*byte[] profilePic = dbData.getProfilePic();
+       byte[] studentIdPic = (dbData.getRole().equalsIgnoreCase("student") && dbData.getStudentIdCardPic() != null) ? dbData.getStudentIdCardPic() : null;
+       byte[] pvcPic = (dbData.getRole().equalsIgnoreCase("alumni") && dbData.getPVCPic() != null) ? dbData.getPVCPic() : null;
+
+
+       Register fetchRecordWithDP = new Register();
+
+       if(pvcPic==null){
+                fetchRecordWithDP = Register.builder()
+                   .id(dbData.getId())
+                   .name(dbData.getName())
+                   .email(dbData.getEmail())
+                   .password(dbData.getPassword())
+                   .role(dbData.getRole())
+                   .profilePic(profilePic)
+                   .studentId(dbData.getStudentId())
+                   .studentIdCardPic(studentIdPic)
+                        .userStatus(dbData.getUserStatus())
+                   .build();
+       }
+       else if(studentIdPic==null){
+           fetchRecordWithDP = Register.builder()
+                   .id(dbData.getId())
+                   .name(dbData.getName())
+                   .email(dbData.getEmail())
+                   .password(dbData.getPassword())
+                   .role(dbData.getRole())
+                   .profilePic(profilePic)
+                   .graduationYear(dbData.getGraduationYear())
+                   .PVCPic(pvcPic)
+                   .userStatus(dbData.getUserStatus())
+                   .build();
+       }*/
+
+
+
+
 package com.shahriar.CSE_Alumni_backend.Services;
 
 import com.shahriar.CSE_Alumni_backend.Entities.*;
@@ -198,44 +235,41 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
     }
 
 
-//    public String updateAccount( String name, String updatedEmail, String password, MultipartFile profilePic,
-//                                 MultipartFile identity,String studentId,
-//                                 String graduationYear
-//    ) {
-//        try {
-//
-//            String currentEmail = requestInterceptorService.getTokenEmailUsedToOtherClass();
-//
-//            Optional<Register> existingAccountOptional = regRepoIF.findByEmail(currentEmail);
-//            Register existingAccount = existingAccountOptional.get();
-//
-//            if (existingAccount == null)
-//                return "No Account found";
-//
-//            byte[] studentIdCardBytes = identity != null ? identity.getBytes() : existingAccount.getIdentity();
-//            byte[] profilePicBytes = profilePic != null ? profilePic.getBytes() : existingAccount.getProfilePic();
-//
-//            // Update the fields with values from the request if they are not null, otherwise keep the existing values
-//            existingAccount.setName(name != null ? name : existingAccount.getName());
-//            existingAccount.setEmail(updatedEmail != null ? updatedEmail : existingAccount.getEmail());
-//            existingAccount.setPassword(password != null ? password : existingAccount.getPassword());
-//
-//            existingAccount.setStudentId(studentId != null ? studentId : existingAccount.getStudentId());
-//            existingAccount.setGraduationYear(graduationYear != null ? graduationYear : existingAccount.getGraduationYear());
-//            existingAccount.setIdentity(studentIdCardBytes);
-//            existingAccount.setProfilePic(profilePicBytes);
-//
-//
-//            Register temp = regRepoIF.save(existingAccount);
-//
-//            return (temp != null) ? "Account changes are saved: " + updatedEmail :
-//                    "Error!!! Something went wrong...";
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            return "Error!!! Something went wrong while processing the request";
-//        }
-//
-//    }
+    public String updateAccount( String name, String updatedEmail, String password, MultipartFile profilePic,
+                                 MultipartFile identity,String studentId,
+                                 String graduationYear, String token
+    ) {
+        try {
+
+            String currentEmail = new TokenValidation().extractEmailFromToken(token);
+
+            Optional<Register> existingAccountOptional = regRepoIF.findByEmail(currentEmail);
+            Register existingAccount = existingAccountOptional.get();
+
+            byte[] studentIdCardBytes = identity != null ? identity.getBytes() : existingAccount.getIdentity();
+            byte[] profilePicBytes = profilePic != null ? profilePic.getBytes() : existingAccount.getProfilePic();
+
+            // Update the fields with values from the request if they are not null, otherwise keep the existing values
+            existingAccount.setName(name != null ? name : existingAccount.getName());
+            existingAccount.setEmail(updatedEmail != null ? updatedEmail : existingAccount.getEmail());
+            existingAccount.setPassword(password != null ? password : existingAccount.getPassword());
+
+            existingAccount.setStudentId(studentId != null ? studentId : existingAccount.getStudentId());
+            existingAccount.setGraduationYear(graduationYear != null ? graduationYear : existingAccount.getGraduationYear());
+            existingAccount.setIdentity(studentIdCardBytes);
+            existingAccount.setProfilePic(profilePicBytes);
+
+
+            Register temp = regRepoIF.save(existingAccount);
+
+            return (temp != null) ? "Account changes are saved: " + updatedEmail :
+                    "Error!!! Something went wrong...";
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Error!!! Something went wrong while processing the request";
+        }
+
+    }
 
 //    public String deleteAccount() {
 //
@@ -351,7 +385,9 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
     }
 
 
-    public Register fetchRecord(String email) throws DataFormatException {
+    public Register fetchRecord(String request) throws DataFormatException {
+
+        String email = new TokenValidation().extractEmailFromToken(request);
 
         Optional<Register> dbDataOptional = regRepoIF.findByEmail(email);
 
@@ -367,39 +403,6 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
 
         return dbData;
 
-        /*byte[] profilePic = dbData.getProfilePic();
-        byte[] studentIdPic = (dbData.getRole().equalsIgnoreCase("student") && dbData.getStudentIdCardPic() != null) ? dbData.getStudentIdCardPic() : null;
-        byte[] pvcPic = (dbData.getRole().equalsIgnoreCase("alumni") && dbData.getPVCPic() != null) ? dbData.getPVCPic() : null;
-
-
-        Register fetchRecordWithDP = new Register();
-
-        if(pvcPic==null){
-                 fetchRecordWithDP = Register.builder()
-                    .id(dbData.getId())
-                    .name(dbData.getName())
-                    .email(dbData.getEmail())
-                    .password(dbData.getPassword())
-                    .role(dbData.getRole())
-                    .profilePic(profilePic)
-                    .studentId(dbData.getStudentId())
-                    .studentIdCardPic(studentIdPic)
-                         .userStatus(dbData.getUserStatus())
-                    .build();
-        }
-        else if(studentIdPic==null){
-            fetchRecordWithDP = Register.builder()
-                    .id(dbData.getId())
-                    .name(dbData.getName())
-                    .email(dbData.getEmail())
-                    .password(dbData.getPassword())
-                    .role(dbData.getRole())
-                    .profilePic(profilePic)
-                    .graduationYear(dbData.getGraduationYear())
-                    .PVCPic(pvcPic)
-                    .userStatus(dbData.getUserStatus())
-                    .build();
-        }*/
 
     }
 
@@ -461,26 +464,25 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
     }
 
 
-//        public void logout (){
-//
-//            String emailFromToken = requestInterceptorService.getTokenEmailUsedToOtherClass();
-//            System.out.println(emailFromToken);
-//
-//            UserTrack userTrack = usertrackRepo.findByEmail(emailFromToken);
-//            System.out.println(userTrack);
-//
-//            userTrack.setStatus(3);
-//            usertrackRepo.save(userTrack);
-//
-//            // Destroying Token
-//
-//            List<Token> expiredTokens = tokenInterface.findExpiredTokens(LocalDateTime.now());
-//            if (!expiredTokens.isEmpty()) {
-//                tokenInterface.deleteAll(expiredTokens);
-//            }
-//
-//            //currentlyLoggedInUserEmail = null;
-//        }
+        public void logout (String token){
+
+            String emailFromToken = new TokenValidation().extractEmailFromToken(token);
+
+            UserTrack userTrack = usertrackRepo.findByEmail(emailFromToken);
+            System.out.println(userTrack);
+
+            userTrack.setStatus(3);
+            usertrackRepo.save(userTrack);
+
+            // Destroying Token
+
+            List<Token> expiredTokens = tokenInterface.findExpiredTokens(LocalDateTime.now());
+            if (!expiredTokens.isEmpty()) {
+                tokenInterface.deleteAll(expiredTokens);
+            }
+
+            //currentlyLoggedInUserEmail = null;
+        }
 
 
         public UserTrack trackFindByEmail (String email){

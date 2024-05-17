@@ -13,6 +13,9 @@ public class AlumniProjectBackendApplication {
 		SpringApplication.run(AlumniProjectBackendApplication.class, args);
 	}
 
+}
+
+
 //	@Bean
 //	public WebMvcConfigurer configure(){
 //		return new WebMvcConfigurer() {
@@ -22,5 +25,5 @@ public class AlumniProjectBackendApplication {
 //			}
 //		};
 //	}
-}
+
 

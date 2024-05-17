@@ -41,15 +41,14 @@ public class Admin {
 
         if (regService.adminLogin(adminEmail, adminPassword)) {
 
-           String token = new RegController().generateToken(adminEmail);
+            String token = new RegController().generateToken(adminEmail);
 
-            regService.saveToken(adminEmail, token, LocalDateTime.now().plusMinutes(10));
+            regService.saveToken(adminEmail, token, LocalDateTime.now().plusMinutes(40));
 
             LoginResponse response = new LoginResponse();
             response.setMessage("Admin login successful");
             response.setToken(token);
 
-            //System.out.println(response);
             return ResponseEntity.status(HttpStatus.OK).body(response);
         }
 
@@ -81,8 +80,8 @@ public class Admin {
 
         if(new TokenValidation().isTokenValid(authorizationHeader.getToken())){
             //System.out.println("Token is validated...");
-                List<Register> pendingUsers = regService.getPendingUsers();
-            //System.out.println(pendingUsers.size());
+            List<Register> pendingUsers = regService.getPendingUsers();
+                //System.out.println(pendingUsers.size());
                 if (pendingUsers == null) {
                     return new ResponseEntity<>("No requests pending", HttpStatus.OK);
                 }
@@ -97,13 +96,14 @@ public class Admin {
 
 
     @PostMapping("/approveAcc/{email}")
-    public ResponseEntity<String> approveAccount(@PathVariable String email) {
+    public ResponseEntity<String> approveAccount(@PathVariable String email, @RequestBody TokenDto auth) {
 
-        if (regService.returnAdminStatus() == 1) {
-            Register register = regService.approveRegistration(email);
+        if(new TokenValidation().isTokenValid(auth.getToken())){
 
-            if (register.equals(new Register()))
-                return new ResponseEntity<>("Sorry no such account exists", HttpStatus.BAD_REQUEST);
+            if (regService.returnAdminStatus() == 1) {
+                Register register = regService.approveRegistration(email);
+
+            }
 
             return new ResponseEntity<>("Registration approved", HttpStatus.OK);
         }
@@ -113,46 +113,38 @@ public class Admin {
 
 
     @PostMapping("/rejectAcc/{email}")
-    public ResponseEntity<String> rejectAccount(@PathVariable String email) {
+    public ResponseEntity<String> rejectAccount(@PathVariable String email, @RequestBody TokenDto auth) {
 
-        if (regService.returnAdminStatus() == 1) {
+        if(new TokenValidation().isTokenValid(auth.getToken())) {
 
-            Register register = regService.rejectRegistration(email);
+            if (regService.returnAdminStatus() == 1) {
 
-            if (register.equals(new Register()))
-                return new ResponseEntity<>("Sorry no such account exists", HttpStatus.BAD_REQUEST);
+                Register register = regService.rejectRegistration(email);
 
-            return new ResponseEntity<>("Sorry!! You request has been rejected", HttpStatus.OK);
+                return new ResponseEntity<>("Sorry!! You request has been rejected", HttpStatus.OK);
+            }
         }
 
         return new ResponseEntity<>("Access denied...login as admin first", HttpStatus.BAD_REQUEST);
     }
 
+
     @PostMapping("/adminLogout")
-    public ResponseEntity<String> adminLogout() {
+    public ResponseEntity<String> adminLogout(@RequestBody TokenDto auth) {
 
-        if (regService.returnAdminStatus() == 1) {
+        if(new TokenValidation().isTokenValid(auth.getToken())){
 
-            regService.adminLogout();
-            return new ResponseEntity<>("Successfully log out as admin", HttpStatus.OK);
+            if (regService.returnAdminStatus() == 1) {
 
+                regService.adminLogout();
+                return new ResponseEntity<>("Successfully log out as admin", HttpStatus.OK);
+            }
         }
-
         return new ResponseEntity<>("You are trying to logout without login...login as admin first", HttpStatus.BAD_REQUEST);
     }
 
 
-    @GetMapping("/alumnusList")
-    public ResponseEntity<?> alumnusList(@RequestParam("email") String email) {
 
-
-        if (regService.trackFindByEmail(email).getStatus() == 1)
-            return ResponseEntity.ok("Alumnus");
-        else if (regService.trackFindByEmail(email).getStatus() == 2)
-            return ResponseEntity.ok("Password is incorrect...try properly...");
-
-        return ResponseEntity.status(401).body("Sorry..Access denied...plz log in first");
-    }
 
     public void saveImagesOfPendingRequest(List<Register> accounts) {
 
