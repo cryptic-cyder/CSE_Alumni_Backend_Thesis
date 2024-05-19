@@ -30,56 +30,14 @@
                    .PVCPic(pvcPic)
                    .userStatus(dbData.getUserStatus())
                    .build();
-       }*/
+       }
 
 
 
 
-package com.shahriar.CSE_Alumni_backend.Services;
 
-import com.shahriar.CSE_Alumni_backend.Entities.*;
-import com.shahriar.CSE_Alumni_backend.Repos.RegRepoIF;
-import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
-import com.shahriar.CSE_Alumni_backend.Repos.UsertrackRepo;
-import org.springframework.beans.factory.annotation.Autowired;
 
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.zip.DataFormatException;
-import java.util.*;
-
-@Service
-public class RegService {
-
-    @Autowired
-    private RegRepoIF regRepoIF;
-
-//    @Autowired
-//    private UserDTOInterface userDTOInterface;
-
-    @Autowired
-    private TokenInterface tokenInterface;
-
-    //@Autowired
-    //private RequestInterceptorService requestInterceptorService;
-
-    public void saveToken(String email, String token, LocalDateTime timeout) {
-
-        Token tokenEntity = new Token();
-        tokenEntity.setEmail(email);
-        tokenEntity.setToken(token);
-        tokenEntity.setTimeOut(timeout);
-
-        tokenInterface.save(tokenEntity);
-    }
-
-    /*public void sendOTP(String recipientEmail, String otp) throws MessagingException {
+       /*public void sendOTP(String recipientEmail, String otp) throws MessagingException {
 
         // Configuration setting for email sending
         Properties props = new Properties();
@@ -139,7 +97,7 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
         user.setOTP(otp);
 
         userDTOInterface.save(user);*/
-    //}
+//}
 
     /*public void verifyOTP(String gmail, String OTP){
 
@@ -201,6 +159,54 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
 
         return userDTO;
     }*/
+
+
+
+
+
+package com.shahriar.CSE_Alumni_backend.Services;
+
+import com.shahriar.CSE_Alumni_backend.Entities.*;
+import com.shahriar.CSE_Alumni_backend.Repos.RegRepoIF;
+import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
+import com.shahriar.CSE_Alumni_backend.Repos.UsertrackRepo;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.zip.DataFormatException;
+import java.util.*;
+
+@Service
+public class RegService {
+
+    @Autowired
+    private RegRepoIF regRepoIF;
+
+//    @Autowired
+//    private UserDTOInterface userDTOInterface;
+
+    @Autowired
+    private TokenInterface tokenInterface;
+
+    //@Autowired
+    //private RequestInterceptorService requestInterceptorService;
+
+    public void saveToken(String email, String token, LocalDateTime timeout) {
+
+        Token tokenEntity = new Token();
+        tokenEntity.setEmail(email);
+        tokenEntity.setToken(token);
+        tokenEntity.setTimeOut(timeout);
+
+        tokenInterface.save(tokenEntity);
+    }
 
 
     public String requestForAcc(String name, String email, String password, MultipartFile profilePic,
@@ -271,24 +277,26 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
 
     }
 
-//    public String deleteAccount() {
-//
-//        String email = requestInterceptorService.getTokenEmailUsedToOtherClass();
-//
-//        Register existingAcc = regRepoIF.findByEmail(email).get();
-//
-//        if (existingAcc == null)
-//            return "No such account exists";
-//
-//        regRepoIF.delete(existingAcc);
-//
-//        UserTrack existingUserTrack = usertrackRepo.findByEmail(email);
-//
-//        if (existingUserTrack != null)
-//            usertrackRepo.delete(existingUserTrack);
-//
-//        return "Your account is deleted successfully";
-//    }
+    public String deleteAccount(String token) {
+
+        String email = new TokenValidation().extractEmailFromToken(token);
+
+        Register existingAcc = regRepoIF.findByEmail(email).get();
+
+        regRepoIF.delete(existingAcc);
+
+        UserTrack existingUserTrack = usertrackRepo.findByEmail(email);
+
+        if (existingUserTrack != null)
+            usertrackRepo.delete(existingUserTrack);
+
+        List<Token> expiredTokens = tokenInterface.findByEmail(email);
+        if (!expiredTokens.isEmpty()) {
+            tokenInterface.deleteAll(expiredTokens);
+        }
+
+        return "Your account is deleted successfully";
+    }
 
 
     public boolean isAccountExistsAlready(String email) {
@@ -308,6 +316,7 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
         return adminStatus;
     }
 
+
     public int returnUserStatus(String email) {
 
         UserTrack userStatus = usertrackRepo.findByEmail(email);
@@ -317,6 +326,8 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
 
         return userStatus.getStatus();
     }
+
+
 
     public List<Register> getPendingUsers() {
 
@@ -476,7 +487,7 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
 
             // Destroying Token
 
-            List<Token> expiredTokens = tokenInterface.findExpiredTokens(LocalDateTime.now());
+            List<Token> expiredTokens = tokenInterface.findByEmail(emailFromToken);
             if (!expiredTokens.isEmpty()) {
                 tokenInterface.deleteAll(expiredTokens);
             }

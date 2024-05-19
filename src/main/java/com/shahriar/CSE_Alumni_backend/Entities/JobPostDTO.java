@@ -1,49 +1,25 @@
 package com.shahriar.CSE_Alumni_backend.Entities;
 
 import jakarta.persistence.Entity;
-import lombok.Builder;
+import lombok.*;
+import java.util.List;
 
 import java.time.LocalDateTime;
 
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
+@Getter
+@Setter
 public class JobPostDTO {
 
+    private Long id;
+    private String description;
+    private LocalDateTime postedAt;
+    private List<String> decodedImages;
     private String title;
     private String userEmail;
-    private LocalDateTime postedAt;
-
-    // Constructor
-    public JobPostDTO( String title, String userEmail, LocalDateTime postedAt) {
-
-        this.title = title;
-        this.userEmail = userEmail;
-        this.postedAt = postedAt;
-    }
-
-    // Getters and setters
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getUserEmail() {
-        return userEmail;
-    }
-
-    public void setUserEmail(String userEmail) {
-        this.userEmail = userEmail;
-    }
-
-    public LocalDateTime getPostedAt() {
-        return postedAt;
-    }
-
-    public void setPostedAt(LocalDateTime postedAt) {
-        this.postedAt = postedAt;
-    }
+    private List<CommentDTO> comments;
 }

@@ -1,6 +1,7 @@
 package com.shahriar.CSE_Alumni_backend.Services;
 
 
+import com.fasterxml.jackson.core.JsonToken;
 import com.shahriar.CSE_Alumni_backend.Entities.*;
 import com.shahriar.CSE_Alumni_backend.Repos.CommentInterface;
 import com.shahriar.CSE_Alumni_backend.Repos.JobPostInterface;
@@ -191,29 +192,117 @@ public class JobPostService {
     }
 
 
-    public List<JobPost> getAllJobPost() throws IOException {
+    public List<JobPostDTO> getAllJobPost() throws IOException {
 
-        // Access the images field containing Base64-encoded strings
-        List<JobPost> postList = jobPostInterface.findAll();
 
-        for (JobPost eachPost : postList) {
 
-            List<String> listOfBase64VersionOfEachImage = new ArrayList<>();
-            List<byte[]> decodedImages = new ArrayList<>();
+//        // Access the images field containing Base64-encoded strings
+//        List<JobPost> postList = jobPostInterface.findAll();
+//
+//        for (JobPost eachPost : postList) {
+//
+//            List<String> listOfBase64VersionOfEachImage = new ArrayList<>();
+//            List<byte[]> decodedImages = new ArrayList<>();
+//
+//            listOfBase64VersionOfEachImage = (eachPost.getImages() != null) ? eachPost.getImages() : null;
+//
+//            decodedImages = (listOfBase64VersionOfEachImage != null) ?
+//                    decodeImages(listOfBase64VersionOfEachImage) : null;
+//
+//            eachPost.setDecodedImages(decodedImages);
+//
+//            List<Comment> commentsOfThisPost = findAllCommentOfAnySpecificPost(eachPost.getId());
+//            eachPost.setComments(commentsOfThisPost);
+//        }
+//
+//        return postList;
 
-            listOfBase64VersionOfEachImage = (eachPost.getImages() != null) ? eachPost.getImages() : null;
 
-            decodedImages = (listOfBase64VersionOfEachImage != null) ?
-                    decodeImages(listOfBase64VersionOfEachImage) : null;
 
-            eachPost.setDecodedImages(decodedImages);
+        List<JobPost> jobPostList = jobPostInterface.findAll();
+        List<JobPostDTO> convertedPost = new ArrayList<>();
 
-            List<Comment> commentsOfThisPost = findAllCommentOfAnySpecificPost(eachPost.getId());
-            eachPost.setComments(commentsOfThisPost);
+        for(JobPost job:jobPostList) {
+
+            JobPostDTO jobPostDTO = convertToDTO(job);
+            convertedPost.add(jobPostDTO);
         }
 
-        return postList;
+        return convertedPost;
     }
+
+
+
+
+    private JobPostDTO convertToDTO(JobPost jobPost) {
+
+        JobPostDTO jobPostDTO = new JobPostDTO();
+        jobPostDTO.setId(jobPost.getId());
+        jobPostDTO.setDescription(jobPost.getDescription());
+        jobPostDTO.setPostedAt(jobPost.getPostedAt());
+
+        List<String> stringListOfAnyPost = new ArrayList<>();
+
+        stringListOfAnyPost.addAll(jobPost.getImages());
+
+        jobPostDTO.setDecodedImages(stringListOfAnyPost);
+
+
+        jobPostDTO.setTitle(jobPost.getTitle());
+        jobPostDTO.setUserEmail(jobPost.getUserEmail());
+
+
+        List<Comment> listOfComments = jobPost.getComments();
+        List<CommentDTO> commentDTOList = new ArrayList<>();
+
+
+        for(int i=0; i<listOfComments.size(); i++){
+            Comment comment = listOfComments.get(i);
+            CommentDTO commentDTO = convertToDTO(comment);
+            commentDTOList.add(commentDTO);
+        }
+
+        jobPostDTO.setComments(commentDTOList);
+
+        return jobPostDTO;
+    }
+
+    private CommentDTO convertToDTO(Comment comment) {
+
+        CommentDTO commentDTO = new CommentDTO();
+
+        commentDTO.setId(comment.getId());
+        commentDTO.setCommentedAt(comment.getCommentedAt());
+        commentDTO.setCommenter(comment.getCommenter());
+        commentDTO.setTextContent(comment.getTextContent());
+
+        if (comment.getResume() != null) {
+            commentDTO.setDecodedResume(comment.getResume());
+        }
+
+
+        return commentDTO;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public JobPost findAnySpecificJob(Long jobId) throws IOException {
 

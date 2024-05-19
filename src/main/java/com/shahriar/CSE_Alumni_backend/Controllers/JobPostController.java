@@ -1,11 +1,14 @@
 package com.shahriar.CSE_Alumni_backend.Controllers;
 
 import com.shahriar.CSE_Alumni_backend.Entities.Comment;
+import com.shahriar.CSE_Alumni_backend.Entities.CommentDTO;
 import com.shahriar.CSE_Alumni_backend.Entities.JobPost;
 
+import com.shahriar.CSE_Alumni_backend.Entities.JobPostDTO;
 import com.shahriar.CSE_Alumni_backend.Services.JobPostService;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
 
+import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -64,13 +67,25 @@ public class JobPostController {
     @GetMapping("/fetch/allJobPost")
     public ResponseEntity<?> fetchAllJobPost() throws IOException {
 
-
-        List<JobPost> allJobPost = jobPostService.getAllJobPost();
+        //System.out.println("JobPosts...");
+        List<JobPostDTO> allJobPost = jobPostService.getAllJobPost();
 
         if (allJobPost == null)
             return new ResponseEntity<>("No post yet...Site has just developed", HttpStatus.OK);
 
-        saveImagesInSystem(allJobPost);
+        for (JobPostDTO jobPost : allJobPost) {
+            List<CommentDTO> comments = jobPost.getComments();
+            if (comments != null) {
+                for (CommentDTO comment : comments) {
+                    // Decode comment resume if it's Base64 encoded
+                    if (comment.getDecodedResume() != null) {
+                        byte[] decodedResumeBytes = Base64.decodeBase64(comment.getDecodedResume());
+                        String decodedResume = new String(decodedResumeBytes);
+                        comment.setDecodedResume(decodedResume);
+                    }
+                }
+            }
+        }
 
         return new ResponseEntity<>(allJobPost, HttpStatus.OK);
     }
@@ -246,70 +261,70 @@ public class JobPostController {
     }
 
 
-    public void saveImagesInSystem(List<JobPost> allJobPost) {
-
-
-        for (JobPost jobPost : allJobPost) {
-
-            List<byte[]> images = jobPost.getDecodedImages(); // Assuming you have a method to get the images byte data
-            String jobFolder = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Images\\" + "Job_" + jobPost.getId() + "\\";
-
-            File folder = new File(jobFolder);
-
-            if (images != null) {
-
-                if (!folder.exists()) {
-
-                    if (!folder.mkdirs()) {
-                        System.out.println("Failed to create directory: " + jobFolder);
-                    }
-                }
-
-                // Save images of each job into their respective folder
-                for (int i = 0; i < images.size(); i++) {
-                    byte[] imageData = images.get(i);
-                    String filePath = jobFolder + jobPost.getId() + "." + (i + 1) + ".jpg";
-
-                    try (FileOutputStream fos = new FileOutputStream(filePath)) {
-
-                        fos.write(imageData);
-                    } catch (IOException e) {
-                        System.out.println("Error writing image file: " + e.getMessage());
-                        e.printStackTrace();
-                    }
-                }
-            }
-            List<Comment> allCommentOfAnyPost = jobPost.getComments();
-
-            if (allCommentOfAnyPost != null) {
-
-
-                if (!folder.exists()) {
-
-                    if (!folder.mkdirs()) {
-                        System.out.println("Failed to create directory: " + jobFolder);
-                    }
-                }
-
-                for (Comment comment : allCommentOfAnyPost) {
-
-                    if (comment.getResume() != null) {
-
-                        byte[] byteDataFromPostman = comment.getDecodedResume();
-
-                        String filePath = jobFolder + jobPost.getId() + "." + comment.getId() + ".pdf";
-
-                        try (FileOutputStream fos = new FileOutputStream(filePath)) {
-                            fos.write(byteDataFromPostman);
-                        } catch (IOException e) {
-                            System.out.println("Error writing PDF file: " + e.getMessage());
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }
-        }
-    }
+//    public void saveImagesInSystem(List<JobPostDTO> allJobPost) {
+//
+//
+//        for (JobPostDTO jobPost : allJobPost) {
+//
+//            List<byte[]> images = jobPost.getDecodedImages(); // Assuming you have a method to get the images byte data
+//            String jobFolder = "C:\\Users\\HP\\Desktop\\Badhon\\JobPosts\\" + "Job_" + jobPost.getId() + "\\";
+//
+//            File folder = new File(jobFolder);
+//
+//            if (images != null) {
+//
+//                if (!folder.exists()) {
+//
+//                    if (!folder.mkdirs()) {
+//                        System.out.println("Failed to create directory: " + jobFolder);
+//                    }
+//                }
+//
+//                // Save images of each job into their respective folder
+//                for (int i = 0; i < images.size(); i++) {
+//                    byte[] imageData = images.get(i);
+//                    String filePath = jobFolder + jobPost.getId() + "." + (i + 1) + ".jpg";
+//
+//                    try (FileOutputStream fos = new FileOutputStream(filePath)) {
+//
+//                        fos.write(imageData);
+//                    } catch (IOException e) {
+//                        System.out.println("Error writing image file: " + e.getMessage());
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//            List<Comment> allCommentOfAnyPost = jobPost.getComments();
+//
+//            if (allCommentOfAnyPost != null) {
+//
+//
+//                if (!folder.exists()) {
+//
+//                    if (!folder.mkdirs()) {
+//                        System.out.println("Failed to create directory: " + jobFolder);
+//                    }
+//                }
+//
+//                for (Comment comment : allCommentOfAnyPost) {
+//
+//                    if (comment.getResume() != null) {
+//
+//                        byte[] byteDataFromPostman = comment.getDecodedResume();
+//
+//                        String filePath = jobFolder + jobPost.getId() + "." + comment.getId() + ".pdf";
+//
+//                        try (FileOutputStream fos = new FileOutputStream(filePath)) {
+//                            fos.write(byteDataFromPostman);
+//                        } catch (IOException e) {
+//                            System.out.println("Error writing PDF file: " + e.getMessage());
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
 
 
     public void saveImagesAndResumesOfAnyUser(List<JobPost> allJobPostOfAnyUser, String userEmail) {

@@ -1,7 +1,7 @@
 package com.shahriar.CSE_Alumni_backend.Controllers;
 
 
-import com.shahriar.CSE_Alumni_backend.Entities.AdminRequest;
+
 import com.shahriar.CSE_Alumni_backend.Entities.LoginResponse;
 import com.shahriar.CSE_Alumni_backend.Entities.Register;
 import com.shahriar.CSE_Alumni_backend.Entities.TokenDto;
@@ -86,7 +86,7 @@ public class Admin {
                     return new ResponseEntity<>("No requests pending", HttpStatus.OK);
                 }
 
-                saveImagesOfPendingRequest(pendingUsers);
+                //saveImagesOfPendingRequest(pendingUsers);
 
                 return new ResponseEntity<>(pendingUsers, HttpStatus.OK);
         }
