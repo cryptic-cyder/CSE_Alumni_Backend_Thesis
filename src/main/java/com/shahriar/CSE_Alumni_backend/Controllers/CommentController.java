@@ -5,14 +5,29 @@ import com.shahriar.CSE_Alumni_backend.Services.CommentService;
 import com.shahriar.CSE_Alumni_backend.Services.JobPostService;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
@@ -27,101 +42,152 @@ public class CommentController {
     @Autowired
     private RegService regService;
 
-    @PostMapping("/comment/{userEmail}/{jobId}")
+    @Value("${file.upload-dir}")
+    private String uploadDir;
+
+
+    @PostMapping("/comment/{jobId}")
     public ResponseEntity<String> addCommentToJob(
             @PathVariable Long jobId,
-            @PathVariable String userEmail,
             @RequestParam("commentText") String textContent,
             @RequestParam(value = "resume", required = false) MultipartFile resume
     ) {
 
-        if (regService.returnUserStatus(userEmail) != 1)
-            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
+        //if (regService.returnUserStatus(userEmail) != 1)
+        // return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
 
 
-        String response = commentService.addCommentToJob(jobId, userEmail, textContent, resume);
-        return ResponseEntity.status(HttpStatus.OK).body(response);
-    }
+        try {
 
+            String fileUrl = null;
 
-    @GetMapping("/fetch/allCommentOfAnyPost/{userEmail}/{jobId}")
-    public ResponseEntity<?> fetchAllCommentOfAnyPost(@PathVariable Long jobId, @PathVariable String userEmail) throws IOException {
-
-        if (regService.returnUserStatus(userEmail) != 1)
-            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
-
-        List<Comment> allCommentOfAnyPost = commentService.findAllCommentOfAnySpecificPost(jobId);
-
-        if (allCommentOfAnyPost == null)
-            return new ResponseEntity<>("No comment yet to this post", HttpStatus.OK);
-
-
-        saveFetchedResumes(allCommentOfAnyPost, jobId);
-
-        return new ResponseEntity<>(allCommentOfAnyPost, HttpStatus.OK);
-    }
-
-
-    @PutMapping("/update/comment/{jobId}/{commentId}")
-    public ResponseEntity<?> updateComment(
-            @PathVariable Long jobId,
-            @PathVariable Long commentId,
-            @RequestParam("userEmail") String user,
-            @RequestParam(value = "commentText", required = false) String textContent,
-            @RequestParam(value = "resume", required = false) MultipartFile resume
-    ) {
-
-        if (regService.returnUserStatus(user) != 1)
-            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
-
-        if (!commentService.verificationPostCreator(commentId, user)) {
-            return new ResponseEntity<>("You aren't owner of this comment or this comment doesn't exist", HttpStatus.UNAUTHORIZED);
-        }
-
-        String response = commentService.updateCommentToJob(jobId, commentId, textContent, resume);
-
-        return ResponseEntity.status(HttpStatus.OK).body(response);
-    }
-
-    @DeleteMapping("/delete/comment/{commentId}")
-    public ResponseEntity<?> deleteComment(
-            @PathVariable Long commentId,
-            @RequestParam("userEmail") String userEmail
-    ) {
-        if (regService.returnUserStatus(userEmail) != 1)
-            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
-
-        if (!commentService.verificationPostCreator(commentId, userEmail)) {
-            return new ResponseEntity<>("You aren't owner of this comment or this comment doesn't exist", HttpStatus.UNAUTHORIZED);
-        }
-
-        String response = commentService.deleteComment(commentId);
-
-        return ResponseEntity.status(HttpStatus.OK).body(response);
-    }
-
-    public void saveFetchedResumes(List<Comment> allCommentOfAnyPost, Long jobId) {
-
-
-        for (Comment comment : allCommentOfAnyPost) {
-
-            if (comment.getResume() != null) {
-
-                byte[] byteDataFromPostman = comment.getDecodedResume();
-
-                String filePath = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Resumes\\" + jobId + "." + comment.getId() + ".pdf";
-
-                try (FileOutputStream fos = new FileOutputStream(filePath)) {
-                    fos.write(byteDataFromPostman);
-                    System.out.println("PDF file created successfully.");
-                } catch (IOException e) {
-                    System.out.println("Error writing PDF file: " + e.getMessage());
-                    e.printStackTrace();
-                }
+            if (resume != null && !resume.isEmpty()) {
+                String fileName = UUID.randomUUID().toString() + "_" + jobId + "_" + resume.getOriginalFilename();
+                String filePath = uploadDir + "/" + fileName;
+                File dest = new File(filePath);
+                resume.transferTo(dest);
+                fileUrl = filePath;
             }
+
+            String response = commentService.addCommentToJob(jobId, "test@gmail.com", textContent, fileUrl);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error uploading file");
+        }
+    }
+
+
+    @PostMapping("/fetch/allCommentOfAnyPost/{jobId}")
+    public ResponseEntity<List<Comment>> fetchAllCommentOfAnyPost(@PathVariable Long jobId) {
+
+        List<Comment> comments = commentService.findAllCommentOfAnySpecificPost(jobId);
+
+        if (comments == null || comments.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
 
-
+        return new ResponseEntity<>(comments, HttpStatus.OK);
     }
+
+
+    private static final String PDF_DIRECTORY
+            = "C:\\Users\\HP\\Desktop\\Intellij Spring boot\\CSE_Alumni_Backend_Thesis\\Resumes";
+
+
+    @GetMapping ("/pdf/{filename:.+}")
+    public ResponseEntity<Resource> getPdf(@PathVariable String filename) throws IOException {
+
+        System.out.println("FileName is : "+filename);
+
+        Path filePath = Paths.get(PDF_DIRECTORY).resolve(filename);
+        Resource resource = new UrlResource(filePath.toUri());
+
+        // Check if the file exists
+        if (resource.exists() && resource.isReadable()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+        } else {
+            // Handle file not found or inaccessible
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//    @PutMapping("/update/comment/{jobId}/{commentId}")
+//    public ResponseEntity<?> updateComment(
+//            @PathVariable Long jobId,
+//            @PathVariable Long commentId,
+//            @RequestParam("userEmail") String user,
+//            @RequestParam(value = "commentText", required = false) String textContent,
+//            @RequestParam(value = "resume", required = false) MultipartFile resume
+//    ) {
+//
+//        if (regService.returnUserStatus(user) != 1)
+//            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
+//
+//        if (!commentService.verificationPostCreator(commentId, user)) {
+//            return new ResponseEntity<>("You aren't owner of this comment or this comment doesn't exist", HttpStatus.UNAUTHORIZED);
+//        }
+//
+//        String response = commentService.updateCommentToJob(jobId, commentId, textContent, resume);
+//
+//        return ResponseEntity.status(HttpStatus.OK).body(response);
+//    }
+
+//    @DeleteMapping("/delete/comment/{commentId}")
+//    public ResponseEntity<?> deleteComment(
+//            @PathVariable Long commentId,
+//            @RequestParam("userEmail") String userEmail
+//    ) {
+//        if (regService.returnUserStatus(userEmail) != 1)
+//            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
+//
+//        if (!commentService.verificationPostCreator(commentId, userEmail)) {
+//            return new ResponseEntity<>("You aren't owner of this comment or this comment doesn't exist", HttpStatus.UNAUTHORIZED);
+//        }
+//
+//        String response = commentService.deleteComment(commentId);
+//
+//        return ResponseEntity.status(HttpStatus.OK).body(response);
+//    }
+
+//    public void saveFetchedResumes(List<Comment> allCommentOfAnyPost, Long jobId) {
+//
+//
+//        for (Comment comment : allCommentOfAnyPost) {
+//
+//            if (comment.getResume() != null) {
+//
+//                byte[] byteDataFromPostman = comment.getResumeBytes();
+//
+//                String filePath = "C:\\Users\\HP\\Desktop\\Badhon\\Resume\\" + jobId + "." + comment.getId() + ".pdf";
+//
+//                try (FileOutputStream fos = new FileOutputStream(filePath)) {
+//                    fos.write(byteDataFromPostman);
+//                    System.out.println("PDF file created successfully.");
+//                } catch (IOException e) {
+//                    System.out.println("Error writing PDF file: " + e.getMessage());
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+//
+//
+//    }
 
 }

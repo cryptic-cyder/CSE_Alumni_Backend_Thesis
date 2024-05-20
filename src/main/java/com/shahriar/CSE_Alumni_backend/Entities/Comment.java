@@ -28,21 +28,19 @@ public class Comment {
 
     private String commenter;
 
-
     @Column(columnDefinition = "TEXT")
     public String textContent; // Text content of the comment
 
     @Lob
     @Column(length=1000000000)
-    private String resume;
-
-    @Lob
-    @Column(length = 1000000000)
-    private byte[] decodedResume;
+    private String url;
 
     @ManyToOne()
     @JoinColumn(name = "job_id", nullable = false)
     public JobPost jobPost;
 
+//    @Lob
+//    @Column(length = 1000000000)
+//    private byte[] resumeBytes;
 
 }

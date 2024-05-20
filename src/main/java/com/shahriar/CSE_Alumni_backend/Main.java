@@ -1,3 +1,16 @@
+//	@Bean
+//	public WebMvcConfigurer configure(){
+//		return new WebMvcConfigurer() {
+//			@Override
+//			public void addCorsMappings(CorsRegistry reg){
+//		        reg.addMapping("/**").allowedOrigins("http://localhost:3000");
+//			}
+//		};
+//	}
+
+
+
+
 package com.shahriar.CSE_Alumni_backend;
 
 import org.springframework.boot.SpringApplication;
@@ -11,16 +24,3 @@ public class Main {
 	}
 
 }
-
-
-//	@Bean
-//	public WebMvcConfigurer configure(){
-//		return new WebMvcConfigurer() {
-//			@Override
-//			public void addCorsMappings(CorsRegistry reg){
-//		        reg.addMapping("/**").allowedOrigins("http://localhost:3000");
-//			}
-//		};
-//	}
-
-

@@ -29,9 +29,6 @@ public class JobPost {
 
     private LocalDateTime postedAt;
 
-
-    private List<byte[]> decodedImages;
-
     @Lob
     @Column(length = 1000000000)
     private List<String> images = new ArrayList<>();
@@ -40,10 +37,14 @@ public class JobPost {
     @JsonIgnore
     private List<Comment> comments = new ArrayList<>();
 
-
     private String title;
 
     private String userEmail;
+
+
+
+
+    private List<byte[]> decodedImages;
 
 
 }
