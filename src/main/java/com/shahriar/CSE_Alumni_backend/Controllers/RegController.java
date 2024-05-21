@@ -154,7 +154,7 @@ public class RegController {
 
         }
 
-        return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
     }
 
 
@@ -193,7 +193,7 @@ public class RegController {
         response.setMessage("Token is expired...");
         response.setToken(null);
 
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
 

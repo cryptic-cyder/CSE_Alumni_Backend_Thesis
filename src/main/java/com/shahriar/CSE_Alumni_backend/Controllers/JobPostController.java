@@ -8,6 +8,7 @@ import com.shahriar.CSE_Alumni_backend.Entities.JobPostDTO;
 import com.shahriar.CSE_Alumni_backend.Services.JobPostService;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
 
+import com.shahriar.CSE_Alumni_backend.Services.TokenValidation;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -49,17 +50,25 @@ public class JobPostController {
     @PostMapping("/forPostingJob")
     public ResponseEntity<?> forPostingJob(
             @RequestParam("title") String jobTitle,
-            @RequestParam("userEmail") String userEmail,
             @RequestParam("description") String jobDescription,
-            @RequestParam(value = "jobImages", required = false) List<MultipartFile> jobImages
+            @RequestParam(value = "jobImages", required = false) List<MultipartFile> jobImages,
+
+            @RequestHeader("Authorization") String auth
     ) throws IOException {
 
-        if (regService.returnUserStatus(userEmail) != 1)
-            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
+        String token = auth.replace("Bearer", "");
+        //System.out.println("No of images : "+ jobImages.size());
 
-        String response = jobPostService.postJob(jobTitle, userEmail, jobDescription, jobImages);
+        if(new TokenValidation().isTokenValid(token)){
 
-        return new ResponseEntity<>(response, HttpStatus.OK);
+            String userEmail =  new TokenValidation().extractEmailFromToken(token);
+
+            String response = jobPostService.postJob(jobTitle, userEmail, jobDescription, jobImages);
+
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
     }
 
 

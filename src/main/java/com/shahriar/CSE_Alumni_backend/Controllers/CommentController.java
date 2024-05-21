@@ -4,6 +4,7 @@ import com.shahriar.CSE_Alumni_backend.Entities.Comment;
 import com.shahriar.CSE_Alumni_backend.Services.CommentService;
 import com.shahriar.CSE_Alumni_backend.Services.JobPostService;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
+import com.shahriar.CSE_Alumni_backend.Services.TokenValidation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -50,44 +51,58 @@ public class CommentController {
     public ResponseEntity<String> addCommentToJob(
             @PathVariable Long jobId,
             @RequestParam("commentText") String textContent,
-            @RequestParam(value = "resume", required = false) MultipartFile resume
+            @RequestParam(value = "resume", required = false) MultipartFile resume,
+
+
+            @RequestHeader("Authorization") String auth
     ) {
 
-        //if (regService.returnUserStatus(userEmail) != 1)
-        // return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
+        String token = auth.replace("Bearer", "");
 
+        if(new TokenValidation().isTokenValid(token)){
 
-        try {
+            try {
 
-            String fileUrl = null;
+                String fileUrl = null;
 
-            if (resume != null && !resume.isEmpty()) {
-                String fileName = UUID.randomUUID().toString() + "_" + jobId + "_" + resume.getOriginalFilename();
-                String filePath = uploadDir + "/" + fileName;
-                File dest = new File(filePath);
-                resume.transferTo(dest);
-                fileUrl = filePath;
+                if (resume != null && !resume.isEmpty()) {
+                    String fileName = UUID.randomUUID().toString() + "_" + jobId + "_" + resume.getOriginalFilename();
+                    String filePath = uploadDir + "/" + fileName;
+                    File dest = new File(filePath);
+                    resume.transferTo(dest);
+                    fileUrl = filePath;
+                }
+
+                String response = commentService.addCommentToJob(jobId, "test@gmail.com", textContent, fileUrl);
+                return ResponseEntity.status(HttpStatus.OK).body(response);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error uploading resume");
             }
-
-            String response = commentService.addCommentToJob(jobId, "test@gmail.com", textContent, fileUrl);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error uploading file");
         }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You haven't logged in");
     }
 
 
     @PostMapping("/fetch/allCommentOfAnyPost/{jobId}")
-    public ResponseEntity<List<Comment>> fetchAllCommentOfAnyPost(@PathVariable Long jobId) {
+    public ResponseEntity<List<Comment>> fetchAllCommentOfAnyPost(@PathVariable Long jobId,
+                                                                  @RequestHeader("Authorization") String auth) {
 
-        List<Comment> comments = commentService.findAllCommentOfAnySpecificPost(jobId);
+        String token = auth.replace("Bearer", "");
 
-        if (comments == null || comments.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        if(new TokenValidation().isTokenValid(token)){
+
+            List<Comment> comments = commentService.findAllCommentOfAnySpecificPost(jobId);
+
+            if (comments == null || comments.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+
+            return new ResponseEntity<>(comments, HttpStatus.OK);
         }
 
-        return new ResponseEntity<>(comments, HttpStatus.OK);
+        return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
     }
 
 

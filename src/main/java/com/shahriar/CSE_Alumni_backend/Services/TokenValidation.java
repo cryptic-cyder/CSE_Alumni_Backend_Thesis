@@ -17,9 +17,9 @@ public class TokenValidation {
 
             return true; // Allow access to public URLs without token validation
         }
-        System.out.println("Request is : " + request);
+        //System.out.println("Request is : " + request);
         boolean validationResult = validateToken(request);
-        System.out.println(validationResult);
+        //System.out.println(validationResult);
         return validationResult;
     }
 
