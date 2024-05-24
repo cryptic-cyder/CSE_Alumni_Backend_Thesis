@@ -27,6 +27,16 @@ public class RegController {
     @Autowired
     private RegService regService;
 
+    @PostMapping("/public/tokenValidation")
+    public ResponseEntity<?> tokenValidation(@RequestBody TokenDto authorizationHeader){
+
+        if(new TokenValidation().isTokenValid(authorizationHeader.getToken()))
+            return ResponseEntity.status(HttpStatus.OK).body("Token is valid...");
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token is invalid...");
+    }
+
+
 
     //Public API's
     @PostMapping("/public/requestForAccount")
@@ -143,12 +153,9 @@ public class RegController {
 
         if (new TokenValidation().isTokenValid(authorizationHeader.getToken())) {
 
-
             Register fetchedData = regService.fetchRecord(authorizationHeader.getToken());
 
-
             //saveImageOfSpecificAcc(fetchedData);
-
 
             return new ResponseEntity<>(fetchedData, HttpStatus.OK);
 
@@ -166,7 +173,7 @@ public class RegController {
         if (registeredAcc == null)
             return ResponseEntity.status(HttpStatus.OK).body(null);
 
-        saveRegisteredAccounts(registeredAcc);
+        //saveRegisteredAccounts(registeredAcc);
 
         return ResponseEntity.status(HttpStatus.OK).body(registeredAcc);
     }
