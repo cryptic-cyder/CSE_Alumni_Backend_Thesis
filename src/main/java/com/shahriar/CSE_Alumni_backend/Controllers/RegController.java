@@ -1,3 +1,11 @@
+/*  boolean studentInfoProvided = studentId != null && studentIdCard != null;
+       boolean graduationInfoProvided = graduationYear != null && pvc != null;
+
+       if (!studentInfoProvided && !graduationInfoProvided) {
+           return new ResponseEntity<>("Either student ID card and student ID or graduation year and PVC must be provided.", HttpStatus.BAD_REQUEST);
+       }*/
+
+
 package com.shahriar.CSE_Alumni_backend.Controllers;
 
 import com.shahriar.CSE_Alumni_backend.Entities.LoginResponse;
@@ -27,6 +35,7 @@ public class RegController {
     @Autowired
     private RegService regService;
 
+
     @PostMapping("/public/tokenValidation")
     public ResponseEntity<?> tokenValidation(@RequestBody TokenDto authorizationHeader){
 
@@ -42,12 +51,12 @@ public class RegController {
     @PostMapping("/public/requestForAccount")
     public ResponseEntity<?> requestForCreatingAccToAdmin(
             @RequestParam("userName") String name,
-            @RequestParam(value = "userEmail") String email,
+            @RequestParam(value = "userEmail", required = false) String email,
             @RequestParam("passwordOfUser") String password,
-            @RequestParam("profilePicOfUser") MultipartFile profilePic,
+           // @RequestParam("profilePicOfUser") MultipartFile profilePic,
 
-            @RequestParam(value = "studentId", required = false) String studentId,
-            @RequestParam(value = "YearOfGraduation", required = false) String graduationYear,
+            //@RequestParam(value = "studentId", required = false) String studentId,
+            //@RequestParam(value = "YearOfGraduation", required = false) String graduationYear,
 
             @RequestParam(value = "identityPic") MultipartFile identity
 
@@ -56,24 +65,15 @@ public class RegController {
 
 
 
-      /*  boolean studentInfoProvided = studentId != null && studentIdCard != null;
-        boolean graduationInfoProvided = graduationYear != null && pvc != null;
-
-        if (!studentInfoProvided && !graduationInfoProvided) {
-            return new ResponseEntity<>("Either student ID card and student ID or graduation year and PVC must be provided.", HttpStatus.BAD_REQUEST);
-        }*/
-
         if (!regService.isAccountExistsAlready(email)) {
-            String response = regService.requestForAcc(name, email, password, profilePic,
-                    studentId, identity,
-                    graduationYear,
+            String response = regService.requestForAcc(name, email, password, identity,
                     UserStatus.PENDING
             );
 
             return new ResponseEntity<>(response + " and waiting for approval", HttpStatus.OK);
         }
 
-        return new ResponseEntity<>("Account is already exists with this email...", HttpStatus.OK);
+        return new ResponseEntity<>("Account is already exists with this email...", HttpStatus.FOUND);
     }
 
 
@@ -149,7 +149,7 @@ public class RegController {
     @PostMapping("/fetch")
     public ResponseEntity<?> fetchImage(@RequestBody TokenDto authorizationHeader) throws DataFormatException {
 
-        System.out.println(authorizationHeader.getToken());
+        System.out.println("Token is : "+authorizationHeader.getToken());
 
         if (new TokenValidation().isTokenValid(authorizationHeader.getToken())) {
 
@@ -163,6 +163,19 @@ public class RegController {
 
         return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
     }
+
+
+//    @PostMapping("/fetchOthers")
+//    public ResponseEntity<?> fetchOther(@RequestParam("email") String email) throws DataFormatException {
+//
+//        System.out.println(email);
+//        Register fetchedData = regService.fetchRecord(email);
+//
+//        //saveImageOfSpecificAcc(fetchedData);
+//
+//        return new ResponseEntity<>(fetchedData, HttpStatus.OK);
+//
+//    }
 
 
     @GetMapping("/public/fetch/allRegisteredAcc")
@@ -209,6 +222,8 @@ public class RegController {
             @RequestParam(value = "userName", required = false) String name,
             @RequestParam(value = "userEmail", required = false) String email,
             @RequestParam(value = "passwordOfUser", required = false) String password,
+            @RequestParam(value = "profStatus", required = false) String profStatus,
+
             @RequestParam(value = "profilePicOfUser", required = false) MultipartFile profilePic,
             @RequestParam(value = "identityPic", required = false) MultipartFile identity,
 
@@ -219,12 +234,14 @@ public class RegController {
 
     ) {
 
+        //System.out.println(profStatus);
+
         String token = auth.replace("Bearer", "");
 
         if(new TokenValidation().isTokenValid(token)){
             String result = regService.updateAccount(name, email, password, profilePic,
                     identity, studentId,
-                    graduationYear, token);
+                    graduationYear,profStatus, token);
 
             return new ResponseEntity<>(result, HttpStatus.OK);
         }

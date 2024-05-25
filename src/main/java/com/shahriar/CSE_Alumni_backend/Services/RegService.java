@@ -189,14 +189,11 @@ public class RegService {
     @Autowired
     private RegRepoIF regRepoIF;
 
-//    @Autowired
-//    private UserDTOInterface userDTOInterface;
 
     @Autowired
     private TokenInterface tokenInterface;
 
-    //@Autowired
-    //private RequestInterceptorService requestInterceptorService;
+
 
     public void saveToken(String email, String token, LocalDateTime timeout) {
 
@@ -209,24 +206,23 @@ public class RegService {
     }
 
 
-    public String requestForAcc(String name, String email, String password, MultipartFile profilePic,
-                                String studentId, MultipartFile identity,
-                                String graduationYear,
+    public String requestForAcc(String name, String email, String password,
+                                MultipartFile identity,
                                 UserStatus status) {
         try {
 
             byte[] identityBytes = (identity != null) ? (identity.getBytes()) : null;
-            byte[] profilePicBytes = (profilePic != null) ? (profilePic.getBytes()) : null;
+            //byte[] profilePicBytes = (profilePic != null) ? (profilePic.getBytes()) : null;
 
 
             Register register = Register.builder()
                     .name(name)
                     .email(email)
                     .password(password)
-                    .studentId(studentId)
-                    .graduationYear(graduationYear)
+                    //.studentId(studentId)
+                    //.graduationYear(graduationYear)
                     .identity(identityBytes)
-                    .profilePic(profilePicBytes)
+                    //.profilePic(profilePicBytes)
                     .userStatus(status)
                     .build();
 
@@ -243,7 +239,7 @@ public class RegService {
 
     public String updateAccount( String name, String updatedEmail, String password, MultipartFile profilePic,
                                  MultipartFile identity,String studentId,
-                                 String graduationYear, String token
+                                 String graduationYear,String profStatus, String token
     ) {
         try {
 
@@ -256,12 +252,14 @@ public class RegService {
             byte[] profilePicBytes = profilePic != null ? profilePic.getBytes() : existingAccount.getProfilePic();
 
             // Update the fields with values from the request if they are not null, otherwise keep the existing values
-            existingAccount.setName(name != null ? name : existingAccount.getName());
-            existingAccount.setEmail(updatedEmail != null ? updatedEmail : existingAccount.getEmail());
-            existingAccount.setPassword(password != null ? password : existingAccount.getPassword());
+            existingAccount.setName(!name.isEmpty() ? name : existingAccount.getName());
+            existingAccount.setEmail(!updatedEmail.isEmpty() ? updatedEmail : existingAccount.getEmail());
+            existingAccount.setPassword(!password.isEmpty() ? password : existingAccount.getPassword());
+            existingAccount.setProfDetails(!profStatus.isEmpty() ? profStatus : existingAccount.getProfDetails());
 
-            existingAccount.setStudentId(studentId != null ? studentId : existingAccount.getStudentId());
-            existingAccount.setGraduationYear(graduationYear != null ? graduationYear : existingAccount.getGraduationYear());
+
+            existingAccount.setStudentId(!studentId.isEmpty() ? studentId : existingAccount.getStudentId());
+            existingAccount.setGraduationYear(!graduationYear.isEmpty() ? graduationYear : existingAccount.getGraduationYear());
             existingAccount.setIdentity(studentIdCardBytes);
             existingAccount.setProfilePic(profilePicBytes);
 
@@ -413,8 +411,6 @@ public class RegService {
         Register dbData = dbDataOptional.get();
 
         return dbData;
-
-
     }
 
 

@@ -43,7 +43,6 @@ public class JobPost {
 
 
 
-
     private List<byte[]> decodedImages;
 
 
