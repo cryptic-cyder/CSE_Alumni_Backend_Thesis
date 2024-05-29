@@ -195,7 +195,7 @@ public class RegService {
 
 
 
-    public void saveToken(String email, String token, LocalDateTime timeout) {
+    public Token saveToken(String email, String token, LocalDateTime timeout) {
 
         Token tokenEntity = new Token();
         tokenEntity.setEmail(email);
@@ -203,6 +203,8 @@ public class RegService {
         tokenEntity.setTimeOut(timeout);
 
         tokenInterface.save(tokenEntity);
+
+        return tokenEntity;
     }
 
 
@@ -255,7 +257,7 @@ public class RegService {
             existingAccount.setName(!name.isEmpty() ? name : existingAccount.getName());
             existingAccount.setEmail(!updatedEmail.isEmpty() ? updatedEmail : existingAccount.getEmail());
             existingAccount.setPassword(!password.isEmpty() ? password : existingAccount.getPassword());
-            existingAccount.setProfDetails(!profStatus.isEmpty() ? profStatus : existingAccount.getProfDetails());
+            existingAccount.setProfDetails(!profStatus.isBlank() ? profStatus : existingAccount.getProfDetails());
 
 
             existingAccount.setStudentId(!studentId.isEmpty() ? studentId : existingAccount.getStudentId());
@@ -391,6 +393,25 @@ public class RegService {
         }
 
         return new Register();
+    }
+
+
+    public Register fetchOthersRecord(String email) throws DataFormatException {
+
+
+        Optional<Register> dbDataOptional = regRepoIF.findByEmail(email);
+
+//        UserTrack userTrack = usertrackRepo.findByEmail(email);
+//
+//        if (userTrack == null || userTrack.getStatus() != 1)
+//            return new Register();
+
+        if (!dbDataOptional.isPresent())
+            return new Register();
+
+        Register dbData = dbDataOptional.get();
+
+        return dbData;
     }
 
 

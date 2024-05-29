@@ -5,36 +5,43 @@ import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.swing.text.html.Option;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 @Service
 public class TokenValidation {
 
-    public boolean isTokenValid(String request) {
 
-        if (isPublicUrl(request)) {
-
-            return true; // Allow access to public URLs without token validation
-        }
-        //System.out.println("Request is : " + request);
-        boolean validationResult = validateToken(request);
-        //System.out.println(validationResult);
-        return validationResult;
-    }
-
+    @Autowired
+    private TokenInterface tokenInterface;
 
     private boolean isPublicUrl(String requestURI) {
 
         return requestURI.startsWith("/public/");
     }
 
+    public boolean isTokenValid(String request) {
+
+        if (isPublicUrl(request)) {
+
+            return true;
+        }
+        System.out.println("Request is : " + request);
+        boolean validationResult = validateToken(request);
+
+        return validationResult;
+    }
+
+
+
     public String extractEmailFromToken(String token) {
 
         //System.out.println(parts.length);
         try {
             String[] parts = token.split("_");
-            if (parts.length >= 2) {
+            if (parts.length >= 3) {
 
                 String tokenEmail = parts[1];
 
@@ -60,44 +67,36 @@ public class TokenValidation {
         }
     }
 
-    @Autowired
-    private TokenInterface tokenInterface;
+
 
 
     private boolean validateToken(String token) {
 
-        String tokenEmail = extractEmailFromToken(token);
-        //System.out.println("Token email is : "+tokenEmail);
 
         String[] parts = token.split("_");
 
-        LocalDateTime expiryTime = LocalDateTime.parse(parts[2], DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime tokenExpiryTime = LocalDateTime.parse(parts[2], DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
-        if (LocalDateTime.now().isAfter(expiryTime)) {
-            //System.out.println("Time has expired...");
+        //String tokenString = parts[0];
+        String tokenEmail = extractEmailFromToken(token);
+
+        if (LocalDateTime.now().isAfter(tokenExpiryTime)) {
+
             return false; // Token has expired
         }
 
-//        Token tokenFromDB = tokenInterface.findByToken(token);
-//        System.out.println("Token from DB : "+tokenFromDB);
-//        if (tokenFromDB == null)
-//            return false;
-//
-//        return tokenFromDB.getEmail().equalsIgnoreCase(tokenEmail);
-
         return true;
 
+//        String tokenId = parts[3];
+//        Long tokenIdLong = Long.parseLong(tokenId);
+//
+//        Optional<Token> tokenFromDB = tokenInterface.findById(tokenIdLong);
+//        Token tokenDB = tokenFromDB.get();
+//
+//        if (tokenDB == null)
+//            return false;
+//
+//        return tokenDB.getEmail().equalsIgnoreCase(tokenEmail);
 
-//        if (tokenEmail == null)
-//            return false;
-//
-//        Token tokenFromDB = tokenInterface.findByToken(token);
-//
-//        if (tokenFromDB == null)
-//            return false;
-//
-//        return tokenFromDB.getEmail().equalsIgnoreCase(tokenEmail);
     }
-
-
 }

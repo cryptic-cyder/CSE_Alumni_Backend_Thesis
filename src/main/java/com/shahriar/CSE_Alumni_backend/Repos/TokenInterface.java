@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.*;
 
-@Repository
+
 public interface TokenInterface extends JpaRepository<Token, Long> {
     Token findByToken(String token);
 

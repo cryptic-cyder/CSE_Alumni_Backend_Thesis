@@ -100,6 +100,7 @@ public class CommentService {
 
 
     public List<Comment> findAllCommentOfAnySpecificPost(Long jobId) {
+        //System.out.println("Job post id : "+jobId);
 
         Optional<JobPost> jobPostOptional = jobPostInterface.findById(jobId);
 

@@ -8,10 +8,8 @@
 
 package com.shahriar.CSE_Alumni_backend.Controllers;
 
-import com.shahriar.CSE_Alumni_backend.Entities.LoginResponse;
-import com.shahriar.CSE_Alumni_backend.Entities.Register;
-import com.shahriar.CSE_Alumni_backend.Entities.TokenDto;
-import com.shahriar.CSE_Alumni_backend.Entities.UserStatus;
+import com.shahriar.CSE_Alumni_backend.Entities.*;
+import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
 import com.shahriar.CSE_Alumni_backend.Services.TokenValidation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +24,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.DataFormatException;
 
@@ -53,10 +52,6 @@ public class RegController {
             @RequestParam("userName") String name,
             @RequestParam(value = "userEmail", required = false) String email,
             @RequestParam("passwordOfUser") String password,
-           // @RequestParam("profilePicOfUser") MultipartFile profilePic,
-
-            //@RequestParam(value = "studentId", required = false) String studentId,
-            //@RequestParam(value = "YearOfGraduation", required = false) String graduationYear,
 
             @RequestParam(value = "identityPic") MultipartFile identity
 
@@ -76,6 +71,8 @@ public class RegController {
         return new ResponseEntity<>("Account is already exists with this email...", HttpStatus.FOUND);
     }
 
+    @Autowired
+    private TokenInterface tokenInterface;
 
     @PostMapping("/public/UserLogin")
     public ResponseEntity<?> login(@RequestParam("userEmail") String email,
@@ -114,12 +111,19 @@ public class RegController {
 
             String token = generateToken(email);
 
-            regService.saveToken(email, token, LocalDateTime.now().plusMinutes(40));
+            Token token1 = regService.saveToken(email, token, LocalDateTime.now().plusMinutes(40));
+
+            Token tokenForId = tokenInterface.findByToken(token);
+            String tokenId = tokenForId.getId().toString();
+
+            token1.setToken(token1.getToken()+"_"+tokenId);
+            tokenInterface.save(token1);
 
             LoginResponse response = new LoginResponse();
 
             response.setMessage("User login successful");
-            response.setToken(token);
+            response.setToken(token+"_"+tokenId);
+
 
             return ResponseEntity.status(HttpStatus.OK).body(response);
         }
@@ -149,33 +153,44 @@ public class RegController {
     @PostMapping("/fetch")
     public ResponseEntity<?> fetchImage(@RequestBody TokenDto authorizationHeader) throws DataFormatException {
 
-        System.out.println("Token is : "+authorizationHeader.getToken());
+        //System.out.println("Token is : "+authorizationHeader.getToken());
 
-        if (new TokenValidation().isTokenValid(authorizationHeader.getToken())) {
+        String token = authorizationHeader.getToken();
 
-            Register fetchedData = regService.fetchRecord(authorizationHeader.getToken());
+        if (new TokenValidation().isTokenValid(token)) {
 
-            //saveImageOfSpecificAcc(fetchedData);
+            String[] parts = token.split("_");
+            Long id = Long.parseLong(parts[3]);
 
-            return new ResponseEntity<>(fetchedData, HttpStatus.OK);
+            Optional<Token> tokenFromDB = tokenInterface.findById(id);
+            String emailFromTokenDB = tokenFromDB.get().getEmail();
+            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
 
+
+            if(emailFromBrowserToken.equals(emailFromTokenDB)){
+
+                Register fetchedData = regService.fetchRecord(authorizationHeader.getToken());
+
+                //saveImageOfSpecificAcc(fetchedData);
+
+                return new ResponseEntity<>(fetchedData, HttpStatus.OK);
+            }
         }
 
         return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
     }
 
 
-//    @PostMapping("/fetchOthers")
-//    public ResponseEntity<?> fetchOther(@RequestParam("email") String email) throws DataFormatException {
-//
-//        System.out.println(email);
-//        Register fetchedData = regService.fetchRecord(email);
-//
-//        //saveImageOfSpecificAcc(fetchedData);
-//
-//        return new ResponseEntity<>(fetchedData, HttpStatus.OK);
-//
-//    }
+    @PostMapping("/fetchOthers/{email}")
+    public ResponseEntity<?> fetchOther(@PathVariable("email") String email) throws DataFormatException {
+
+        //System.out.println("\n\nPost person's email is : "+email+"\n\n");
+        Register fetchedData = regService.fetchOthersRecord(email);
+
+        //System.out.println(fetchedData.getEmail()+" "+fetchedData.getName()+" "+fetchedData.getPassword());
+
+        return new ResponseEntity<>(fetchedData, HttpStatus.OK);
+    }
 
 
     @GetMapping("/public/fetch/allRegisteredAcc")
@@ -198,15 +213,27 @@ public class RegController {
     @PostMapping("/UserLogout")
     public ResponseEntity<?> logout(@RequestBody TokenDto auth) {
 
-        if (new TokenValidation().isTokenValid(auth.getToken())) {
+        String token = auth.getToken();
 
-            regService.logout(auth.getToken());
+        if (new TokenValidation().isTokenValid(token)) {
 
-            LoginResponse response = new LoginResponse();
-            response.setMessage("User logged out...");
-            response.setToken(null);
+            String[] parts = token.split("_");
+            Long id = Long.parseLong(parts[3]);
 
-            return ResponseEntity.status(HttpStatus.OK).body(response);
+            Optional<Token> tokenFromDB = tokenInterface.findById(id);
+            String emailFromTokenDB = tokenFromDB.get().getEmail();
+            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+
+
+            if(emailFromBrowserToken.equals(emailFromTokenDB)){
+                regService.logout(auth.getToken());
+
+                LoginResponse response = new LoginResponse();
+                response.setMessage("User logged out...");
+                response.setToken(null);
+
+                return ResponseEntity.status(HttpStatus.OK).body(response);
+            }
         }
 
         LoginResponse response = new LoginResponse();
@@ -234,19 +261,31 @@ public class RegController {
 
     ) {
 
-        //System.out.println(profStatus);
+        if(profStatus.isBlank())
+           System.out.println("\n\nProfessional Status is empty.\n\n");
 
         String token = auth.replace("Bearer", "");
 
         if(new TokenValidation().isTokenValid(token)){
-            String result = regService.updateAccount(name, email, password, profilePic,
-                    identity, studentId,
-                    graduationYear,profStatus, token);
 
-            return new ResponseEntity<>(result, HttpStatus.OK);
+            String[] parts = token.split("_");
+            Long id = Long.parseLong(parts[3]);
+
+            Optional<Token> tokenFromDB = tokenInterface.findById(id);
+            String emailFromTokenDB = tokenFromDB.get().getEmail();
+            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+
+
+            if(emailFromBrowserToken.equals(emailFromTokenDB)){
+                String result = regService.updateAccount(name, email, password, profilePic,
+                        identity, studentId,
+                        graduationYear,profStatus, token);
+
+                return new ResponseEntity<>(result, HttpStatus.OK);
+            }
         }
 
-        return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
 
     }
 
@@ -255,14 +294,26 @@ public class RegController {
     public ResponseEntity<?> deleteAccount( @RequestBody TokenDto auth) {
 
 
+        String token = auth.getToken();
+
         if(new TokenValidation().isTokenValid(auth.getToken())) {
 
-            String result = regService.deleteAccount(auth.getToken());
+            String[] parts = token.split("_");
+            Long id = Long.parseLong(parts[3]);
 
-            return new ResponseEntity<>(result, HttpStatus.OK);
+            Optional<Token> tokenFromDB = tokenInterface.findById(id);
+            String emailFromTokenDB = tokenFromDB.get().getEmail();
+            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+
+
+            if(emailFromBrowserToken.equals(emailFromTokenDB)){
+                String result = regService.deleteAccount(auth.getToken());
+
+                return new ResponseEntity<>(result, HttpStatus.OK);
+            }
         }
 
-        return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
     }
 
 

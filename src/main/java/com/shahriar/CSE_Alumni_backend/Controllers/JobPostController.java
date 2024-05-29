@@ -1,10 +1,8 @@
 package com.shahriar.CSE_Alumni_backend.Controllers;
 
-import com.shahriar.CSE_Alumni_backend.Entities.Comment;
-import com.shahriar.CSE_Alumni_backend.Entities.CommentDTO;
-import com.shahriar.CSE_Alumni_backend.Entities.JobPost;
+import com.shahriar.CSE_Alumni_backend.Entities.*;
 
-import com.shahriar.CSE_Alumni_backend.Entities.JobPostDTO;
+import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
 import com.shahriar.CSE_Alumni_backend.Services.JobPostService;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
 
@@ -20,6 +18,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
@@ -31,20 +31,46 @@ public class JobPostController {
     @Autowired
     private RegService regService;
 
+    @Autowired
+    private TokenInterface tokenInterface;
 
-//    @GetMapping("/search")
-//    public ResponseEntity<?> search(@RequestParam("searchContent") String query) throws IOException {
-//
-//        List<JobPost> searchResults = jobPostService.performSearch(query);
-//
-//        if (searchResults == null) {
-//            return new ResponseEntity<>("No matching is found", HttpStatus.OK);
-//        }
-//
-//        saveSearchResults(searchResults);
-//
-//        return ResponseEntity.ok().body(searchResults);
-//    }
+
+    @PostMapping("/search")
+    public ResponseEntity<?> search(@RequestBody Map<String, String> payload,
+                                    @RequestHeader("Authorization") String auth) throws IOException {
+
+        String token = auth.replace("Bearer", "");
+
+        if (new TokenValidation().isTokenValid(token)){
+            String[] parts = token.split("_");
+            Long id = Long.parseLong(parts[3]);
+
+            Optional<Token> tokenFromDB = tokenInterface.findById(id);
+            String emailFromTokenDB = tokenFromDB.get().getEmail();
+            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+
+            if (emailFromBrowserToken.equals(emailFromTokenDB)){
+
+                String query = payload.get("searchContent");
+                System.out.println("Searched query is : " + query);
+
+                List<JobPost> searchResults = jobPostService.performSearch(query);
+
+                //System.out.println(searchResults.size());
+
+                if (searchResults == null) {
+                    return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+                }
+
+                //saveSearchResults(searchResults);
+
+                return new ResponseEntity<>(searchResults, HttpStatus.OK);
+            }
+
+        }
+
+        return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+    }
 
     //POST methods
     @PostMapping("/forPostingJob")
@@ -57,15 +83,24 @@ public class JobPostController {
     ) throws IOException {
 
         String token = auth.replace("Bearer", "");
-        //System.out.println("No of images : "+ jobImages.size());
 
-        if(new TokenValidation().isTokenValid(token)){
+        if (new TokenValidation().isTokenValid(token)) {
 
-            String userEmail =  new TokenValidation().extractEmailFromToken(token);
+            String[] parts = token.split("_");
+            Long id = Long.parseLong(parts[3]);
 
-            String response = jobPostService.postJob(jobTitle, userEmail, jobDescription, jobImages);
+            Optional<Token> tokenFromDB = tokenInterface.findById(id);
+            String emailFromTokenDB = tokenFromDB.get().getEmail();
+            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
 
-            return new ResponseEntity<>(response, HttpStatus.OK);
+
+            if (emailFromBrowserToken.equals(emailFromTokenDB)) {
+                String userEmail = new TokenValidation().extractEmailFromToken(token);
+
+                String response = jobPostService.postJob(jobTitle, userEmail, jobDescription, jobImages);
+
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
         }
 
         return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
@@ -76,44 +111,49 @@ public class JobPostController {
     @GetMapping("/fetch/allJobPost")
     public ResponseEntity<?> fetchAllJobPost() throws IOException {
 
-        //System.out.println("JobPosts...");
+
         List<JobPost> allJobPost = jobPostService.getAllJobPost();
 
         if (allJobPost == null)
             return new ResponseEntity<>("No post yet...Site has just developed", HttpStatus.OK);
 
-//        for(JobPost jobPost: allJobPost){
-//            List<Comment> commentList = jobPost.getComments();
-//            System.out.println(jobPost.getTitle()+" : "+commentList.size());
-//            for(Comment comment:commentList){
-//                if(comment.getId()==2){
-//                    System.out.println(comment.getTextContent()+" "+comment.getResume());
-//                }
-//            }
-//        }
+        return new ResponseEntity<>(allJobPost, HttpStatus.OK);
 
         //saveImagesInSystem(allJobPost);
 
-        return new ResponseEntity<>(allJobPost, HttpStatus.OK);
     }
 
 
-//    @GetMapping("/fetch/allJobPostOfAnyUser")
-//    public ResponseEntity<?> fetchAllPostOfAnyUser(@PathVariable String userEmail) throws IOException {
-//
-//        if (regService.returnUserStatus(userEmail) != 1)
-//            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
-//
-//
-//        List<JobPost> allJobPostOfAnyUser = jobPostService.findAllPostOfAnyUser(userEmail);
-//
-//        if (allJobPostOfAnyUser == null)
-//            return new ResponseEntity<>("No post of this user : " + userEmail, HttpStatus.OK);
-//
-//        saveImagesAndResumesOfAnyUser(allJobPostOfAnyUser, userEmail);
-//
-//        return new ResponseEntity<>(allJobPostOfAnyUser, HttpStatus.OK);
-//    }
+    @PostMapping("/fetch/allJobPostOfAnyUser")
+    public ResponseEntity<?> fetchAllPostOfAnyUser(@RequestHeader("Authorization") String auth) throws IOException {
+
+        String token = auth.replace("Bearer", "");
+
+        if (new TokenValidation().isTokenValid(token)) {
+
+            String[] parts = token.split("_");
+            Long id = Long.parseLong(parts[3]);
+
+            Optional<Token> tokenFromDB = tokenInterface.findById(id);
+            String emailFromTokenDB = tokenFromDB.get().getEmail();
+            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+
+
+            if (emailFromBrowserToken.equals(emailFromTokenDB)) {
+
+                List<JobPost> allJobPostOfAnyUser = jobPostService.findAllPostOfAnyUser(emailFromBrowserToken);
+
+                if (allJobPostOfAnyUser == null)
+                    return new ResponseEntity<>("No post of this user : " + emailFromBrowserToken, HttpStatus.OK);
+
+                //saveImagesAndResumesOfAnyUser(allJobPostOfAnyUser, userEmail);
+
+                return new ResponseEntity<>(allJobPostOfAnyUser, HttpStatus.OK);
+            }
+        }
+
+        return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+    }
 //
 //    @GetMapping("/fetch/anyParticularJob/{jobId}")
 //    public ResponseEntity<?> fetchAnyParticularJob(@PathVariable Long jobId) throws IOException {

@@ -1,6 +1,8 @@
 package com.shahriar.CSE_Alumni_backend.Controllers;
 
 import com.shahriar.CSE_Alumni_backend.Entities.Comment;
+import com.shahriar.CSE_Alumni_backend.Entities.Token;
+import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
 import com.shahriar.CSE_Alumni_backend.Services.CommentService;
 import com.shahriar.CSE_Alumni_backend.Services.JobPostService;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
@@ -23,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -46,6 +49,8 @@ public class CommentController {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
+    @Autowired
+    private TokenInterface tokenInterface;
 
     @PostMapping("/comment/{jobId}")
     public ResponseEntity<String> addCommentToJob(
@@ -91,15 +96,26 @@ public class CommentController {
 
         String token = auth.replace("Bearer", "");
 
-        if(new TokenValidation().isTokenValid(token)){
+        if(new TokenValidation().isTokenValid(token) ){
 
-            List<Comment> comments = commentService.findAllCommentOfAnySpecificPost(jobId);
+            String[] parts = token.split("_");
+            Long id = Long.parseLong(parts[3]);
 
-            if (comments == null || comments.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            Optional<Token> tokenFromDB = tokenInterface.findById(id);
+            String emailFromTokenDB = tokenFromDB.get().getEmail();
+            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+
+
+            if(emailFromBrowserToken.equals(emailFromTokenDB)){
+
+                List<Comment> comments = commentService.findAllCommentOfAnySpecificPost(jobId);
+
+                if (comments == null || comments.isEmpty()) {
+                    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                }
+
+                return new ResponseEntity<>(comments, HttpStatus.OK);
             }
-
-            return new ResponseEntity<>(comments, HttpStatus.OK);
         }
 
         return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
