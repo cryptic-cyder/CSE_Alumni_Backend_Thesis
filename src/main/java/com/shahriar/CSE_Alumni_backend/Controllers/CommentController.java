@@ -78,7 +78,9 @@ public class CommentController {
                     fileUrl = filePath;
                 }
 
-                String response = commentService.addCommentToJob(jobId, "test@gmail.com", textContent, fileUrl);
+                String commenter = new TokenValidation().extractEmailFromToken(token);
+
+                String response = commentService.addCommentToJob(jobId, commenter, textContent, fileUrl);
                 return ResponseEntity.status(HttpStatus.OK).body(response);
             } catch (IOException e) {
                 e.printStackTrace();
