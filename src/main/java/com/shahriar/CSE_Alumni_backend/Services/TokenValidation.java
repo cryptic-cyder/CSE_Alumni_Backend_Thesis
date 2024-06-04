@@ -17,7 +17,7 @@ public class TokenValidation {
     @Autowired
     private TokenInterface tokenInterface;
 
-    private boolean isPublicUrl(String requestURI) {
+    public boolean isPublicUrl(String requestURI) {
 
         return requestURI.startsWith("/public/");
     }
