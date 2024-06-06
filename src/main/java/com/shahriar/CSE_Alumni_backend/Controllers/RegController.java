@@ -9,6 +9,7 @@
 package com.shahriar.CSE_Alumni_backend.Controllers;
 
 import com.shahriar.CSE_Alumni_backend.Entities.*;
+import com.shahriar.CSE_Alumni_backend.Repos.RegRepoIF;
 import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
 import com.shahriar.CSE_Alumni_backend.Services.RegService;
 import com.shahriar.CSE_Alumni_backend.Services.TokenValidation;
@@ -33,6 +34,66 @@ public class RegController {
 
     @Autowired
     private RegService regService;
+
+    @Autowired
+    private RegRepoIF regRepoIF;
+
+    @PostMapping("/public/ChangePassword")
+    public ResponseEntity<?> changePassword(@RequestHeader("Authorization") String auth,
+                                            @RequestParam("userPassword") String password
+    ){
+
+        String token = auth.replace("Bearer", "");
+
+        String[] parts = token.split("_");
+        Long id = Long.parseLong(parts[3]);
+
+        //Optional<Token> tokenFromDB = tokenInterface.findById(id);
+        String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+
+        Optional<Register> record = regRepoIF.findByEmail(emailFromBrowserToken);
+        Register record1 = record.get();
+
+        record1.setPassword(password);
+        regRepoIF.save(record1);
+
+        return ResponseEntity.status(HttpStatus.OK).body("Password changed successfully");
+    }
+
+    @PostMapping("/public/forgetPassword")
+    public ResponseEntity<?> sendEmail(@RequestParam("userEmail") String email){
+
+        String token = generateToken(email);
+
+        String resetLink = "http://localhost:3000/Password_Recovery";
+
+        String emailBody = "Dear User,\n\n"
+                + "You have requested to reset your password. Please click the following link to reset your password:\n"
+                + resetLink + "\n\n"
+                + "If you did not request this, please ignore this email.\n\n"
+                + "Best regards,\nFrom Application Team";
+
+
+        regService.sendEmail(email, "Password Reset Request", emailBody);
+
+
+
+        Token token1 = regService.saveToken(email, token, LocalDateTime.now().plusMinutes(40));
+
+        Token tokenForId = tokenInterface.findByToken(token);
+        String tokenId = tokenForId.getId().toString();
+
+        token1.setToken(token1.getToken()+"_"+tokenId);
+        tokenInterface.save(token1);
+
+        LoginResponse response = new LoginResponse();
+
+        response.setMessage("Sent email properly");
+        response.setToken(token+"_"+tokenId);
+
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
 
 
     @PostMapping("/public/tokenValidation")

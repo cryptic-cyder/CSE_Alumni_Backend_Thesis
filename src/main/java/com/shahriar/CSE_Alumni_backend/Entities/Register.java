@@ -3,8 +3,8 @@ package com.shahriar.CSE_Alumni_backend.Entities;
 import jakarta.persistence.*;
 import lombok.*;
 
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
+//import javax.mail.internet.AddressException;
+//import javax.mail.internet.InternetAddress;
 
 @Entity
 @Data
@@ -17,20 +17,20 @@ public class Register {
 
 
     public void setEmail(String email) {
-        if(isValidEmail(email))
+        //if(isValidEmail(email))
             this.email = email;
     }
 
-    public static boolean isValidEmail(String email) {
-        boolean isValid = true;
-        try {
-            InternetAddress internetAddress = new InternetAddress(email);
-            internetAddress.validate();
-        } catch (AddressException e) {
-            isValid = false;
-        }
-        return isValid;
-    }
+//    public static boolean isValidEmail(String email) {
+//        boolean isValid = true;
+//        try {
+//            InternetAddress internetAddress = new InternetAddress(email);
+//            internetAddress.validate();
+//        } catch (AddressException e) {
+//            isValid = false;
+//        }
+//        return isValid;
+//    }
 
 
 

@@ -172,6 +172,10 @@ import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
 import com.shahriar.CSE_Alumni_backend.Repos.UsertrackRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -183,6 +187,8 @@ import java.util.Optional;
 import java.util.zip.DataFormatException;
 import java.util.*;
 
+import static java.time.LocalDateTime.now;
+
 @Service
 public class RegService {
 
@@ -192,6 +198,33 @@ public class RegService {
 
     @Autowired
     private TokenInterface tokenInterface;
+
+
+    @Autowired
+    private JavaMailSender javaMailSender;
+
+    @Value("$(spring.mail.username)")
+    private String from;
+
+    public void sendEmail(String recipient, String subject, String body) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+
+            message.setFrom(from);
+            message.setTo(recipient);
+            message.setText(body);
+            message.setSubject(subject);
+
+            javaMailSender.send(message);
+
+            System.out.println("Mail sent successfully");
+        }
+        catch (MailException e) {
+
+            System.out.println("Failed to send email: " + e.getMessage());
+        }
+    }
+
 
 
 
