@@ -207,7 +207,9 @@ public class RegService {
     private String from;
 
     public void sendEmail(String recipient, String subject, String body) {
+
         try {
+
             SimpleMailMessage message = new SimpleMailMessage();
 
             message.setFrom(from);

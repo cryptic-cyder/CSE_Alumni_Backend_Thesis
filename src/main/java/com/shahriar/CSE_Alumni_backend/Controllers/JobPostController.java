@@ -192,21 +192,62 @@ public class JobPostController {
     }
 
 
-    @DeleteMapping("/delete/{postId}")
-    public ResponseEntity<String> deleteJob(
+    @PostMapping ("/delete/{postId}")
+    public ResponseEntity<?> deleteJob(
             @PathVariable Long postId,
-            @RequestParam("userEmail") String userEmail
-    ) {
+            @RequestHeader("Authorization") String auth
+    ) throws IOException {
 
-        if (regService.returnUserStatus(userEmail) != 1)
-            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.UNAUTHORIZED);
+        //System.out.println("Hit");
 
-        if (!jobPostService.verificationPostCreator(postId, userEmail)) {
-            return new ResponseEntity<>("You aren't owner of this post or the post doesn't exist", HttpStatus.UNAUTHORIZED);
+        LoginResponse response = new LoginResponse();
+
+        String token = auth.replace("Bearer", "");
+
+        if (new TokenValidation().isTokenValid(token)) {
+
+            //System.out.println("Token is valid...");
+
+            String[] parts = token.split("_");
+            Long id = Long.parseLong(parts[3]);
+
+            Optional<Token> tokenFromDB = tokenInterface.findById(id);
+            String emailFromTokenDB = tokenFromDB.get().getEmail();
+            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+
+            if (emailFromBrowserToken.equals(emailFromTokenDB)){
+
+                //System.out.println("Email is same...");
+
+                JobPost jobPost = jobPostService.findAnySpecificJob(postId);
+                String postCreator = jobPost.getUserEmail();
+
+                //System.out.println("\n\n "+postCreator+" "+emailFromBrowserToken+"\n\n");
+
+                if(postCreator.equals(emailFromTokenDB)){
+
+                    String feedback = jobPostService.deleteJob(postId);
+
+                    response.setMessage(feedback);
+                    response.setToken(null);
+
+                    return ResponseEntity.status(HttpStatus.OK).body(response);
+                }
+
+                //System.out.println("Not owner...");
+
+                response.setMessage("Token is expired...Or not the owner");
+                response.setToken(null);
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
         }
 
-        String response = jobPostService.deleteJob(postId);
-        return ResponseEntity.ok(response);
+
+        response.setMessage("Token is expired...Or not the owner");
+        response.setToken(null);
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
 //    public void saveImagesInSystemForSpecificPost(JobPost jobPost) {

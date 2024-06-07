@@ -181,68 +181,69 @@ public class JobPostService {
 
     }
 
-    private List<byte[]> decodeImages(List<String> listOfBase64VersionOfEachImage) {
-
-        List<byte[]> decodedImages = new ArrayList<>();
-
-        for (String base64VersionOfEachImage : listOfBase64VersionOfEachImage) {
-
-            byte[] decodedImage = Base64.getDecoder().decode(base64VersionOfEachImage);
-            decodedImages.add(decodedImage);
-
-        }
-
-        return decodedImages;
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//    public JobPost findAnySpecificJob(Long jobId) throws IOException {
+//    private List<byte[]> decodeImages(List<String> listOfBase64VersionOfEachImage) {
 //
-//        Optional<JobPost> jobPostOptional = jobPostInterface.findById(jobId);
+//        List<byte[]> decodedImages = new ArrayList<>();
 //
-//        if (jobPostOptional.isPresent()) {
-//            JobPost jobPost = jobPostOptional.get();
+//        for (String base64VersionOfEachImage : listOfBase64VersionOfEachImage) {
 //
-//            List<String> listOfBase64VersionOfEachImage = new ArrayList<>();
-//            List<byte[]> decodedImages = new ArrayList<>();
+//            byte[] decodedImage = Base64.getDecoder().decode(base64VersionOfEachImage);
+//            decodedImages.add(decodedImage);
 //
-//            listOfBase64VersionOfEachImage = (jobPost.getImages() != null) ? jobPost.getImages() : null;
-//
-//            decodedImages = (listOfBase64VersionOfEachImage != null) ?
-//                    decodeImages(listOfBase64VersionOfEachImage) : null;
-//
-//            jobPost.setDecodedImages(decodedImages);
-//
-//            List<Comment> comments = findAllCommentOfAnySpecificPost(jobId);
-//            jobPost.setComments(comments);
-//
-//            return jobPost;
 //        }
 //
-//        return null;
+//        return decodedImages;
 //    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public JobPost findAnySpecificJob(Long jobId) throws IOException {
+
+        Optional<JobPost> jobPostOptional = jobPostInterface.findById(jobId);
+
+        return jobPostOptional.orElse(null);
+
+
+
+        //            JobPost jobPost = jobPostOptional.get();
+        //
+        //            List<String> listOfBase64VersionOfEachImage = new ArrayList<>();
+        //            List<byte[]> decodedImages = new ArrayList<>();
+        //
+        //            listOfBase64VersionOfEachImage = (jobPost.getImages() != null) ? jobPost.getImages() : null;
+        //
+        //            decodedImages = (listOfBase64VersionOfEachImage != null) ?
+        //                    decodeImages(listOfBase64VersionOfEachImage) : null;
+        //
+        //            jobPost.setDecodedImages(decodedImages);
+        //
+        //            List<Comment> comments = findAllCommentOfAnySpecificPost(jobId);
+        //            jobPost.setComments(comments);
+        //
+        //            return jobPost;
+
+    }
 
 
     public List<JobPost> findAllPostOfAnyUser(String userEmail) throws IOException {

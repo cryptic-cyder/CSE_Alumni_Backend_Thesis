@@ -1,6 +1,8 @@
 package com.shahriar.CSE_Alumni_backend.Controllers;
 
 import com.shahriar.CSE_Alumni_backend.Entities.Comment;
+import com.shahriar.CSE_Alumni_backend.Entities.JobPost;
+import com.shahriar.CSE_Alumni_backend.Entities.LoginResponse;
 import com.shahriar.CSE_Alumni_backend.Entities.Token;
 import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
 import com.shahriar.CSE_Alumni_backend.Services.CommentService;
@@ -182,22 +184,65 @@ public class CommentController {
 //        return ResponseEntity.status(HttpStatus.OK).body(response);
 //    }
 
-//    @DeleteMapping("/delete/comment/{commentId}")
-//    public ResponseEntity<?> deleteComment(
-//            @PathVariable Long commentId,
-//            @RequestParam("userEmail") String userEmail
-//    ) {
-//        if (regService.returnUserStatus(userEmail) != 1)
-//            return new ResponseEntity<>("You are not logged in...or your account is pending", HttpStatus.OK);
-//
-//        if (!commentService.verificationPostCreator(commentId, userEmail)) {
-//            return new ResponseEntity<>("You aren't owner of this comment or this comment doesn't exist", HttpStatus.UNAUTHORIZED);
-//        }
-//
-//        String response = commentService.deleteComment(commentId);
-//
-//        return ResponseEntity.status(HttpStatus.OK).body(response);
-//    }
+
+    @PostMapping("/delete/comment/{commentId}")
+    public ResponseEntity<?> deleteComment(
+            @PathVariable Long commentId,
+            @RequestHeader("Authorization") String auth
+    ) {
+
+
+        System.out.println("Hit");
+
+        LoginResponse response = new LoginResponse();
+
+        String token = auth.replace("Bearer", "");
+
+        if (new TokenValidation().isTokenValid(token)) {
+
+            System.out.println("Token is valid...");
+
+            String[] parts = token.split("_");
+            Long id = Long.parseLong(parts[3]);
+
+            Optional<Token> tokenFromDB = tokenInterface.findById(id);
+            String emailFromTokenDB = tokenFromDB.get().getEmail();
+            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+
+            if (emailFromBrowserToken.equals(emailFromTokenDB)){
+
+                System.out.println("Email is same...");
+
+                Comment comment = commentService.findComment(commentId);
+                String commentCreator = comment.getCommenter();
+
+                System.out.println("\n\n "+commentCreator+" "+emailFromBrowserToken+"\n\n");
+
+                if(commentCreator.equals(emailFromTokenDB)){
+
+                    String feedback = commentService.deleteComment(commentId);
+
+                    response.setMessage(feedback);
+                    response.setToken(null);
+
+                    return ResponseEntity.status(HttpStatus.OK).body(response);
+                }
+
+                //System.out.println("Not owner...");
+
+                response.setMessage("Token is expired...Or not the owner");
+                response.setToken(null);
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+        }
+
+        response.setMessage("Token is expired...Or not the owner");
+        response.setToken(null);
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+
+    }
 
 //    public void saveFetchedResumes(List<Comment> allCommentOfAnyPost, Long jobId) {
 //

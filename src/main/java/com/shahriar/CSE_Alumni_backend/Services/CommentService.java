@@ -224,6 +224,28 @@ public class CommentService {
 //    }
 
 
+    public Comment findComment(Long commentId) {
+
+        try{
+            Comment comment;
+
+            if(commentInterface.findById(commentId).isPresent()){
+
+                 comment = commentInterface.findById(commentId).get();
+
+            }
+            else{
+                return null;
+            }
+
+            return comment;
+        }
+        catch (Exception e){
+            return null;
+        }
+
+    }
+
 
     public String deleteComment(Long commentId) {
 
