@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.DataFormatException;
@@ -38,10 +39,31 @@ public class RegController {
     @Autowired
     private RegRepoIF regRepoIF;
 
+
+    @PostMapping("/SearchMembers")
+    public ResponseEntity<?> search(@RequestBody Map<String, String> payload
+                                    ) throws IOException {
+
+
+        String query = payload.get("searchContent");
+        System.out.println("Searched query is : " + query);
+
+        List<Register> searchResults = regService.performSearch(query);
+
+        //System.out.println(searchResults.size());
+
+        if (searchResults == null) {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
+
+        return new ResponseEntity<>(searchResults, HttpStatus.OK);
+    }
+
+
     @PostMapping("/public/ChangePassword")
     public ResponseEntity<?> changePassword(@RequestHeader("Authorization") String auth,
                                             @RequestParam("userPassword") String password
-    ){
+    ) {
 
         String token = auth.replace("Bearer", "");
 
@@ -61,7 +83,7 @@ public class RegController {
     }
 
     @PostMapping("/public/forgetPassword")
-    public ResponseEntity<?> sendEmail(@RequestParam("userEmail") String email){
+    public ResponseEntity<?> sendEmail(@RequestParam("userEmail") String email) {
 
         String token = generateToken(email);
 
@@ -77,19 +99,18 @@ public class RegController {
         regService.sendEmail(email, "Password Reset Request", emailBody);
 
 
-
         Token token1 = regService.saveToken(email, token, LocalDateTime.now().plusMinutes(40));
 
         Token tokenForId = tokenInterface.findByToken(token);
         String tokenId = tokenForId.getId().toString();
 
-        token1.setToken(token1.getToken()+"_"+tokenId);
+        token1.setToken(token1.getToken() + "_" + tokenId);
         tokenInterface.save(token1);
 
         LoginResponse response = new LoginResponse();
 
         response.setMessage("Sent email properly");
-        response.setToken(token+"_"+tokenId);
+        response.setToken(token + "_" + tokenId);
 
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
@@ -97,14 +118,13 @@ public class RegController {
 
 
     @PostMapping("/public/tokenValidation")
-    public ResponseEntity<?> tokenValidation(@RequestBody TokenDto authorizationHeader){
+    public ResponseEntity<?> tokenValidation(@RequestBody TokenDto authorizationHeader) {
 
-        if(new TokenValidation().isTokenValid(authorizationHeader.getToken()))
+        if (new TokenValidation().isTokenValid(authorizationHeader.getToken()))
             return ResponseEntity.status(HttpStatus.OK).body("Token is valid...");
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token is invalid...");
     }
-
 
 
     //Public API's
@@ -118,7 +138,6 @@ public class RegController {
 
     )
             throws IOException {
-
 
 
         if (!regService.isAccountExistsAlready(email)) {
@@ -177,13 +196,13 @@ public class RegController {
             Token tokenForId = tokenInterface.findByToken(token);
             String tokenId = tokenForId.getId().toString();
 
-            token1.setToken(token1.getToken()+"_"+tokenId);
+            token1.setToken(token1.getToken() + "_" + tokenId);
             tokenInterface.save(token1);
 
             LoginResponse response = new LoginResponse();
 
             response.setMessage("User login successful");
-            response.setToken(token+"_"+tokenId);
+            response.setToken(token + "_" + tokenId);
 
 
             return ResponseEntity.status(HttpStatus.OK).body(response);
@@ -228,7 +247,7 @@ public class RegController {
             String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
 
 
-            if(emailFromBrowserToken.equals(emailFromTokenDB)){
+            if (emailFromBrowserToken.equals(emailFromTokenDB)) {
 
                 Register fetchedData = regService.fetchRecord(authorizationHeader.getToken());
 
@@ -286,7 +305,7 @@ public class RegController {
             String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
 
 
-            if(emailFromBrowserToken.equals(emailFromTokenDB)){
+            if (emailFromBrowserToken.equals(emailFromTokenDB)) {
                 regService.logout(auth.getToken());
 
                 LoginResponse response = new LoginResponse();
@@ -322,12 +341,12 @@ public class RegController {
 
     ) {
 
-        if(profStatus.isBlank())
-           System.out.println("\n\nProfessional Status is empty.\n\n");
+        if (profStatus.isBlank())
+            System.out.println("\n\nProfessional Status is empty.\n\n");
 
         String token = auth.replace("Bearer", "");
 
-        if(new TokenValidation().isTokenValid(token)){
+        if (new TokenValidation().isTokenValid(token)) {
 
             String[] parts = token.split("_");
             Long id = Long.parseLong(parts[3]);
@@ -337,10 +356,10 @@ public class RegController {
             String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
 
 
-            if(emailFromBrowserToken.equals(emailFromTokenDB)){
+            if (emailFromBrowserToken.equals(emailFromTokenDB)) {
                 String result = regService.updateAccount(name, email, password, profilePic,
                         identity, studentId,
-                        graduationYear,profStatus, token);
+                        graduationYear, profStatus, token);
 
                 return new ResponseEntity<>(result, HttpStatus.OK);
             }
@@ -352,12 +371,12 @@ public class RegController {
 
 
     @PostMapping("/deleteAcc")
-    public ResponseEntity<?> deleteAccount( @RequestBody TokenDto auth) {
+    public ResponseEntity<?> deleteAccount(@RequestBody TokenDto auth) {
 
 
         String token = auth.getToken();
 
-        if(new TokenValidation().isTokenValid(auth.getToken())) {
+        if (new TokenValidation().isTokenValid(auth.getToken())) {
 
             String[] parts = token.split("_");
             Long id = Long.parseLong(parts[3]);
@@ -367,7 +386,7 @@ public class RegController {
             String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
 
 
-            if(emailFromBrowserToken.equals(emailFromTokenDB)){
+            if (emailFromBrowserToken.equals(emailFromTokenDB)) {
                 String result = regService.deleteAccount(auth.getToken());
 
                 return new ResponseEntity<>(result, HttpStatus.OK);
@@ -376,9 +395,6 @@ public class RegController {
 
         return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
     }
-
-
-
 
 
     public void saveImageOfSpecificAcc(Register account) {

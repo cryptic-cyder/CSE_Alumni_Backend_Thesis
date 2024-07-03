@@ -200,7 +200,7 @@ public class CommentController {
 
         if (new TokenValidation().isTokenValid(token)) {
 
-            System.out.println("Token is valid...");
+            //System.out.println("Token is valid...");
 
             String[] parts = token.split("_");
             Long id = Long.parseLong(parts[3]);
@@ -211,12 +211,12 @@ public class CommentController {
 
             if (emailFromBrowserToken.equals(emailFromTokenDB)){
 
-                System.out.println("Email is same...");
+                //System.out.println("Email is same...");
 
                 Comment comment = commentService.findComment(commentId);
                 String commentCreator = comment.getCommenter();
 
-                System.out.println("\n\n "+commentCreator+" "+emailFromBrowserToken+"\n\n");
+                //System.out.println("\n\n "+commentCreator+" "+emailFromBrowserToken+"\n\n");
 
                 if(commentCreator.equals(emailFromTokenDB)){
 

@@ -69,19 +69,19 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
         /*Imagine you have a template for writing letters. This template includes things like the sender's address,
         the recipient's address, the subject, and the body of the letter. Whenever you want to write a new letter,
          you start with this template.In Java, creating an email message is like creating a template for an email.
-          The Message object represents this template. But before you can use this template, you need to set it up
+          The MessageController object represents this template. But before you can use this template, you need to set it up
           with some basic information, like the email server details and authentication. That's what the Session object
           helps with. It's like setting up the letter-writing environment.So, when you write new MimeMessage(session),
            you're essentially saying, "Java, I want to create a new template for an email message. And I want to use the
            settings we prepared earlier (like the email server details) to set up this template."
-          Once you have this Message template, you can then fill in the specific details for each email you want to send,
+          Once you have this MessageController template, you can then fill in the specific details for each email you want to send,
           like who it's from, who it's to, the subject, and the body of the email. But this line of code just creates the
           blank template, ready for you to fill in the specific details later.*/
 
-        /*Message message = new MimeMessage(session);
+        /*MessageController message = new MimeMessage(session);
 
         message.setFrom(new InternetAddress("shahriarbadhon778@gmail.com"));
-        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail));
+        message.setRecipients(MessageController.RecipientType.TO, InternetAddress.parse(recipientEmail));
         message.setSubject("OTP Verification");
         message.setText("Your OTP for account verification is: " + otp);
 
@@ -206,6 +206,14 @@ public class RegService {
     @Value("$(spring.mail.username)")
     private String from;
 
+    public List<Register> performSearch(String queryToBeSearched) throws IOException {
+
+
+        List<Register> searchResults = regRepoIF.findByDescriptionContaining(queryToBeSearched);
+
+        return searchResults;
+    }
+
     public void sendEmail(String recipient, String subject, String body) {
 
         try {
@@ -289,14 +297,14 @@ public class RegService {
             byte[] profilePicBytes = profilePic != null ? profilePic.getBytes() : existingAccount.getProfilePic();
 
             // Update the fields with values from the request if they are not null, otherwise keep the existing values
-            existingAccount.setName(!name.isEmpty() ? name : existingAccount.getName());
-            existingAccount.setEmail(!updatedEmail.isEmpty() ? updatedEmail : existingAccount.getEmail());
-            existingAccount.setPassword(!password.isEmpty() ? password : existingAccount.getPassword());
-            existingAccount.setProfDetails(!profStatus.isBlank() ? profStatus : existingAccount.getProfDetails());
+            existingAccount.setName(name!=null ? name : existingAccount.getName());
+            existingAccount.setEmail(updatedEmail!=null ? updatedEmail : existingAccount.getEmail());
+            existingAccount.setPassword(password!=null ? password : existingAccount.getPassword());
+            existingAccount.setProfDetails(profStatus!=null ? profStatus : existingAccount.getProfDetails());
 
 
-            existingAccount.setStudentId(!studentId.isEmpty() ? studentId : existingAccount.getStudentId());
-            existingAccount.setGraduationYear(!graduationYear.isEmpty() ? graduationYear : existingAccount.getGraduationYear());
+            existingAccount.setStudentId(studentId!=null ? studentId : existingAccount.getStudentId());
+            existingAccount.setGraduationYear(graduationYear!=null ? graduationYear : existingAccount.getGraduationYear());
             existingAccount.setIdentity(studentIdCardBytes);
             existingAccount.setProfilePic(profilePicBytes);
 
