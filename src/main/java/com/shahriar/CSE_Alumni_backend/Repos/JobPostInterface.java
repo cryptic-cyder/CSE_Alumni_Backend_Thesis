@@ -11,7 +11,7 @@ public interface JobPostInterface extends JpaRepository<JobPost, Long> {
 
     List<JobPost> findByUserEmail(String userEmail);
 
-    @Query(value = "SELECT * FROM job_post jp WHERE jp.description LIKE %:query%", nativeQuery = true)
+    @Query(value = "SELECT * FROM job_post jp WHERE jp.requirements or jp.responsibilities or jp.title LIKE %:query%", nativeQuery = true)
     List<JobPost> findByDescriptionContaining(@Param("query") String query);
 
 }

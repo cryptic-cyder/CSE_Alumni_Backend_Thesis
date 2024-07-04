@@ -23,9 +23,23 @@ public class JobPost {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+
+    private String company;
+    private String vacancy;
+    private String location;
+
+
     @Lob
     @Column(length = 10000000)
-    private String description;
+    private String requirements;
+
+    @Lob
+    @Column(length = 10000000)
+    private String responsibilities;
+
+    @Lob
+    @Column(length = 10000000)
+    private String salary;
 
     private LocalDateTime postedAt;
 

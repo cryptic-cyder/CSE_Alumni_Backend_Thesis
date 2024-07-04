@@ -43,7 +43,10 @@ public class JobPostService {
     }
 
 
-    public String postJob(String title, String userEmail, String description, List<MultipartFile> jobImagesData) {
+    public String postJob(String title, String userEmail,
+                          String company, String vacancy, String location,
+                          String requirements, String responsibilities, String salary,
+                          List<MultipartFile> jobImagesData) {
 
         try {
             List<String> compressedImagesBase64 = new ArrayList<>();
@@ -66,7 +69,12 @@ public class JobPostService {
 
                     .title(title)
                     .userEmail(userEmail)
-                    .description(description)
+                    .company(company)
+                    .vacancy(vacancy)
+                    .location(location)
+                    .requirements(requirements)
+                    .responsibilities(responsibilities)
+                    .salary(salary)
                     .images(compressedImagesBase64)
                     .postedAt(LocalDateTime.now())
                     .build();
@@ -201,23 +209,6 @@ public class JobPostService {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public JobPost findAnySpecificJob(Long jobId) throws IOException {
 
         Optional<JobPost> jobPostOptional = jobPostInterface.findById(jobId);
@@ -259,7 +250,10 @@ public class JobPostService {
     }
 
 
-    public String updateJob(Long postId, String title, String userEmail, String description, List<MultipartFile> jobImagesData) {
+    public String updateJob(Long postId, String title,  String userEmail,
+            String company, String vacancy, String location,
+                            String requirements, String responsibilities, String salary,
+                            List<MultipartFile> jobImagesData) {
         try {
 
             Optional<JobPost> optionalJobPost = jobPostInterface.findById(postId);
@@ -270,16 +264,16 @@ public class JobPostService {
 
             JobPost jobPost = optionalJobPost.get();
 
-            // Update fields if provided
-            if (title != null) {
-                jobPost.setTitle(title);
-            }
-            if (userEmail != null) {
-                jobPost.setUserEmail(userEmail);
-            }
-            if (description != null) {
-                jobPost.setDescription(description);
-            }
+            jobPost.setTitle(!title.isEmpty() ? title : jobPost.getTitle());
+            jobPost.setUserEmail(!userEmail.isEmpty() ? userEmail : jobPost.getUserEmail());
+            jobPost.setCompany(!company.isEmpty() ? company : jobPost.getCompany());
+            jobPost.setVacancy(!vacancy.isEmpty() ? vacancy : jobPost.getVacancy());
+            jobPost.setLocation(!location.isEmpty() ? location : jobPost.getLocation());
+            jobPost.setRequirements(!requirements.isEmpty() ? requirements : jobPost.getRequirements());
+            jobPost.setResponsibilities(!responsibilities.isBlank() ? responsibilities : jobPost.getResponsibilities());
+            jobPost.setSalary(!salary.isEmpty() ? salary : jobPost.getSalary());
+
+
             // Update images if provided
             if (jobImagesData != null) {
                 List<String> compressedImagesBase64 = new ArrayList<>();
