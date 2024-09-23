@@ -39,18 +39,35 @@ public class RegController {
     @Autowired
     private RegRepoIF regRepoIF;
 
+    private String userEmail;
+
+    @Autowired
+    private TokenInterface tokenInterface;
+
+
+    public boolean emailMatching(String token) {
+
+        String[] parts = token.split("_");
+        Long id = Long.parseLong(parts[3]);
+
+        Optional<Token> tokenFromDB = tokenInterface.findById(id);
+        String emailFromTokenDB = tokenFromDB.get().getEmail();
+        String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+
+        userEmail = emailFromBrowserToken;
+
+        return emailFromBrowserToken.equals(emailFromTokenDB);
+    }
+
 
     @PostMapping("/SearchMembers")
     public ResponseEntity<?> search(@RequestBody Map<String, String> payload
-                                    ) throws IOException {
+    ) throws IOException {
 
 
         String query = payload.get("searchContent");
-        System.out.println("Searched query is : " + query);
 
         List<Register> searchResults = regService.performSearch(query);
-
-        //System.out.println(searchResults.size());
 
         if (searchResults == null) {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
@@ -62,28 +79,45 @@ public class RegController {
 
     @PostMapping("/public/ChangePassword")
     public ResponseEntity<?> changePassword(@RequestHeader("Authorization") String auth,
-                                            @RequestParam("userPassword") String password
-    ) {
+                                            @RequestParam("userPassword") String password) {
+        try {
 
-        String token = auth.replace("Bearer", "");
+            String token = auth.replace("Bearer ", "");
 
-        String[] parts = token.split("_");
-        Long id = Long.parseLong(parts[3]);
+            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
 
-        //Optional<Token> tokenFromDB = tokenInterface.findById(id);
-        String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+            if(! regRepoIF.existsByEmail(emailFromBrowserToken)){
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            }
 
-        Optional<Register> record = regRepoIF.findByEmail(emailFromBrowserToken);
-        Register record1 = record.get();
+            Optional<Register> record = regRepoIF.findByEmail(emailFromBrowserToken);
 
-        record1.setPassword(password);
-        regRepoIF.save(record1);
+            if (record.isPresent()) {
 
-        return ResponseEntity.status(HttpStatus.OK).body("Password changed successfully");
+                Register record1 = record.get();
+                record1.setPassword(password);
+                regRepoIF.save(record1);
+
+                //System.out.println("Password updated for user: " + emailFromBrowserToken);
+                return ResponseEntity.status(HttpStatus.OK).body("Password changed successfully");
+            }
+            else {
+                //System.out.println("User not found for email: " + emailFromBrowserToken);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            }
+        }
+        catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while processing your request");
+        }
     }
 
     @PostMapping("/public/forgetPassword")
     public ResponseEntity<?> sendEmail(@RequestParam("userEmail") String email) {
+
+        if(! regRepoIF.existsByEmail(email)){
+            //System.out.println("No such account");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
 
         String token = generateToken(email);
 
@@ -97,7 +131,7 @@ public class RegController {
 
 
         regService.sendEmail(email, "Password Reset Request", emailBody);
-
+        System.out.println("Hello this is typing from mobile");
 
         Token token1 = regService.saveToken(email, token, LocalDateTime.now().plusMinutes(40));
 
@@ -133,26 +167,24 @@ public class RegController {
             @RequestParam("userName") String name,
             @RequestParam(value = "userEmail", required = false) String email,
             @RequestParam("passwordOfUser") String password,
+            @RequestParam("NidOrBirthCertificate") MultipartFile NidOrBirthCertificate,
 
             @RequestParam(value = "identityPic") MultipartFile identity
-
     )
             throws IOException {
 
 
         if (!regService.isAccountExistsAlready(email)) {
-            String response = regService.requestForAcc(name, email, password, identity,
+
+            String response = regService.requestForAcc(name, email, password, identity, NidOrBirthCertificate,
                     UserStatus.PENDING
             );
 
             return new ResponseEntity<>(response + " and waiting for approval", HttpStatus.OK);
         }
-
         return new ResponseEntity<>("Account is already exists with this email...", HttpStatus.FOUND);
     }
 
-    @Autowired
-    private TokenInterface tokenInterface;
 
     @PostMapping("/public/UserLogin")
     public ResponseEntity<?> login(@RequestParam("userEmail") String email,
@@ -161,33 +193,32 @@ public class RegController {
 
         int authentication = regService.login(email, password);
 
-        System.out.println(authentication);
+        LoginResponse response = new LoginResponse();
 
         if (authentication == 3) {
-
-            LoginResponse response = new LoginResponse();
 
             response.setMessage("Account is waiting for approval...");
             response.setToken(null);
 
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
 
-        } else if (authentication == 0) {
+        }
+        else if (authentication == 0) {
 
-            LoginResponse response = new LoginResponse();
 
             response.setMessage("Sorry...No such account exists");
             response.setToken(null);
 
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
-        } else if (authentication == 2) {
-            LoginResponse response = new LoginResponse();
+        }
+        else if (authentication == 2) {
 
             response.setMessage("Password is incorrect");
             response.setToken(null);
 
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        } else if (authentication == 1) {
+        }
+        else if (authentication == 1) {
 
             String token = generateToken(email);
 
@@ -199,16 +230,11 @@ public class RegController {
             token1.setToken(token1.getToken() + "_" + tokenId);
             tokenInterface.save(token1);
 
-            LoginResponse response = new LoginResponse();
-
             response.setMessage("User login successful");
             response.setToken(token + "_" + tokenId);
 
-
             return ResponseEntity.status(HttpStatus.OK).body(response);
         }
-
-        LoginResponse response = new LoginResponse();
 
         response.setMessage("Bad request.....");
         response.setToken(null);
@@ -220,10 +246,8 @@ public class RegController {
 
         String token = UUID.randomUUID().toString();
 
-        // You can customize the format of the timeout if needed
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-        // Concatenate the email and current time to make the token unique
         token += "_" + email + "_" + LocalDateTime.now().plusMinutes(40).format(formatter);
 
         return token;
@@ -233,30 +257,14 @@ public class RegController {
     @PostMapping("/fetch")
     public ResponseEntity<?> fetchImage(@RequestBody TokenDto authorizationHeader) throws DataFormatException {
 
-        //System.out.println("Token is : "+authorizationHeader.getToken());
-
         String token = authorizationHeader.getToken();
 
-        if (new TokenValidation().isTokenValid(token)) {
+        if (new TokenValidation().isTokenValid(token) && emailMatching(token)) {
 
-            String[] parts = token.split("_");
-            Long id = Long.parseLong(parts[3]);
+            Register fetchedData = regService.fetchRecord(authorizationHeader.getToken());
 
-            Optional<Token> tokenFromDB = tokenInterface.findById(id);
-            String emailFromTokenDB = tokenFromDB.get().getEmail();
-            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
-
-
-            if (emailFromBrowserToken.equals(emailFromTokenDB)) {
-
-                Register fetchedData = regService.fetchRecord(authorizationHeader.getToken());
-
-                //saveImageOfSpecificAcc(fetchedData);
-
-                return new ResponseEntity<>(fetchedData, HttpStatus.OK);
-            }
+            return new ResponseEntity<>(fetchedData, HttpStatus.OK);
         }
-
         return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
     }
 
@@ -264,13 +272,12 @@ public class RegController {
     @PostMapping("/fetchOthers/{email}")
     public ResponseEntity<?> fetchOther(@PathVariable("email") String email) throws DataFormatException {
 
-        //System.out.println("\n\nPost person's email is : "+email+"\n\n");
         Register fetchedData = regService.fetchOthersRecord(email);
-
-        //System.out.println(fetchedData.getEmail()+" "+fetchedData.getName()+" "+fetchedData.getPassword());
 
         return new ResponseEntity<>(fetchedData, HttpStatus.OK);
     }
+
+
 
 
     @GetMapping("/public/fetch/allRegisteredAcc")
@@ -281,11 +288,11 @@ public class RegController {
         if (registeredAcc == null)
             return ResponseEntity.status(HttpStatus.OK).body(null);
 
-        //saveRegisteredAccounts(registeredAcc);
-
         return ResponseEntity.status(HttpStatus.OK).body(registeredAcc);
     }
 
+
+    //saveRegisteredAccounts(registeredAcc);
 
     // private API's
 
@@ -294,29 +301,18 @@ public class RegController {
     public ResponseEntity<?> logout(@RequestBody TokenDto auth) {
 
         String token = auth.getToken();
+        LoginResponse response = new LoginResponse();
 
-        if (new TokenValidation().isTokenValid(token)) {
+        if (new TokenValidation().isTokenValid(token) && emailMatching(token)) {
 
-            String[] parts = token.split("_");
-            Long id = Long.parseLong(parts[3]);
+            regService.logout(auth.getToken());
 
-            Optional<Token> tokenFromDB = tokenInterface.findById(id);
-            String emailFromTokenDB = tokenFromDB.get().getEmail();
-            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+            response.setMessage("User logged out...");
+            response.setToken(null);
 
-
-            if (emailFromBrowserToken.equals(emailFromTokenDB)) {
-                regService.logout(auth.getToken());
-
-                LoginResponse response = new LoginResponse();
-                response.setMessage("User logged out...");
-                response.setToken(null);
-
-                return ResponseEntity.status(HttpStatus.OK).body(response);
-            }
+            return ResponseEntity.status(HttpStatus.OK).body(response);
         }
 
-        LoginResponse response = new LoginResponse();
         response.setMessage("Token is expired...");
         response.setToken(null);
 
@@ -336,6 +332,7 @@ public class RegController {
 
             @RequestParam(value = "studentId", required = false) String studentId,
             @RequestParam(value = "YearOfGraduation", required = false) String graduationYear,
+            @RequestParam(value = "about", required = false) String about,
 
             @RequestHeader("Authorization") String auth
 
@@ -346,27 +343,17 @@ public class RegController {
 
         String token = auth.replace("Bearer", "");
 
-        if (new TokenValidation().isTokenValid(token)) {
+        if (new TokenValidation().isTokenValid(token) & emailMatching(token)) {
 
-            String[] parts = token.split("_");
-            Long id = Long.parseLong(parts[3]);
+            String result = regService.updateAccount(name, email, password, profilePic,
+                    identity, studentId,
+                    graduationYear, profStatus, about, token);
 
-            Optional<Token> tokenFromDB = tokenInterface.findById(id);
-            String emailFromTokenDB = tokenFromDB.get().getEmail();
-            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+            return new ResponseEntity<>(result, HttpStatus.OK);
 
-
-            if (emailFromBrowserToken.equals(emailFromTokenDB)) {
-                String result = regService.updateAccount(name, email, password, profilePic,
-                        identity, studentId,
-                        graduationYear, profStatus, token);
-
-                return new ResponseEntity<>(result, HttpStatus.OK);
-            }
         }
 
         return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
-
     }
 
 
@@ -376,105 +363,94 @@ public class RegController {
 
         String token = auth.getToken();
 
-        if (new TokenValidation().isTokenValid(auth.getToken())) {
+        if (new TokenValidation().isTokenValid(auth.getToken()) && emailMatching(token)) {
 
-            String[] parts = token.split("_");
-            Long id = Long.parseLong(parts[3]);
+            String result = regService.deleteAccount(auth.getToken());
 
-            Optional<Token> tokenFromDB = tokenInterface.findById(id);
-            String emailFromTokenDB = tokenFromDB.get().getEmail();
-            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
-
-
-            if (emailFromBrowserToken.equals(emailFromTokenDB)) {
-                String result = regService.deleteAccount(auth.getToken());
-
-                return new ResponseEntity<>(result, HttpStatus.OK);
-            }
+            return new ResponseEntity<>(result, HttpStatus.OK);
         }
-
         return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
     }
 
 
-    public void saveImageOfSpecificAcc(Register account) {
-
-        String accountFolder = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Images\\SpecificAccounts\\";
-
-        byte[] image = account.getProfilePic();
-
-        if (image != null) {
-
-            String filePath = accountFolder + account.getName() + ".jpg";
-
-            try (FileOutputStream fos = new FileOutputStream(filePath)) {
-
-                fos.write(image);
-            } catch (IOException e) {
-                System.out.println("Error writing image file: " + e.getMessage());
-                e.printStackTrace();
-            }
-
-        }
-
-        if (account.getIdentity() != null) {
-            saveIdentityList(account.getIdentity(), accountFolder, account);
-        }
-    }
-
-    public void saveIdentityList(byte[] identity, String accountFolder, Register account) {
-
-        String filePath = accountFolder + account.getName() + " identity.jpg";
-
-        try (FileOutputStream fos = new FileOutputStream(filePath)) {
-
-            fos.write(identity);
-        } catch (IOException e) {
-            System.out.println("Error writing image file: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-
-    public void saveRegisteredAccounts(List<Register> accounts) {
-
-        String accountFolder = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Images\\RegisteredAccounts\\";
-
-        for (Register account : accounts) {
-
-            byte[] image = account.getProfilePic();
-
-            if (image != null) {
-
-                String filePath = accountFolder + account.getName() + " profile.jpg";
-
-                try (FileOutputStream fos = new FileOutputStream(filePath)) {
-
-                    fos.write(image);
-                } catch (IOException e) {
-                    System.out.println("Error writing image file: " + e.getMessage());
-                    e.printStackTrace();
-                }
-            }
-
-            if (account.getIdentity() != null) {
-                saveIdentity(account.getIdentity(), accountFolder, account);
-            }
-        }
-    }
-
-    public void saveIdentity(byte[] identity, String accountFolder, Register account) {
-
-        String filePath = accountFolder + account.getName() + " identity.jpg";
-
-        try (FileOutputStream fos = new FileOutputStream(filePath)) {
-
-            fos.write(identity);
-        } catch (IOException e) {
-            System.out.println("Error writing image file: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+//    public void saveImageOfSpecificAcc(Register account) {
+//
+//        String accountFolder = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Images\\SpecificAccounts\\";
+//
+//        byte[] image = account.getProfilePic();
+//
+//        if (image != null) {
+//
+//            String filePath = accountFolder + account.getName() + ".jpg";
+//
+//            try (FileOutputStream fos = new FileOutputStream(filePath)) {
+//
+//                fos.write(image);
+//            } catch (IOException e) {
+//                System.out.println("Error writing image file: " + e.getMessage());
+//                e.printStackTrace();
+//            }
+//
+//        }
+//
+//        if (account.getIdentity() != null) {
+//            saveIdentityList(account.getIdentity(), accountFolder, account);
+//        }
+//    }
+//
+//    public void saveIdentityList(byte[] identity, String accountFolder, Register account) {
+//
+//        String filePath = accountFolder + account.getName() + " identity.jpg";
+//
+//        try (FileOutputStream fos = new FileOutputStream(filePath)) {
+//
+//            fos.write(identity);
+//        } catch (IOException e) {
+//            System.out.println("Error writing image file: " + e.getMessage());
+//            e.printStackTrace();
+//        }
+//    }
+//
+//
+//    public void saveRegisteredAccounts(List<Register> accounts) {
+//
+//        String accountFolder = "C:\\Users\\Shahriar\\Desktop\\ImageTemp\\Resumes&Images\\Images\\RegisteredAccounts\\";
+//
+//        for (Register account : accounts) {
+//
+//            byte[] image = account.getProfilePic();
+//
+//            if (image != null) {
+//
+//                String filePath = accountFolder + account.getName() + " profile.jpg";
+//
+//                try (FileOutputStream fos = new FileOutputStream(filePath)) {
+//
+//                    fos.write(image);
+//                } catch (IOException e) {
+//                    System.out.println("Error writing image file: " + e.getMessage());
+//                    e.printStackTrace();
+//                }
+//            }
+//
+//            if (account.getIdentity() != null) {
+//                saveIdentity(account.getIdentity(), accountFolder, account);
+//            }
+//        }
+//    }
+//
+//    public void saveIdentity(byte[] identity, String accountFolder, Register account) {
+//
+//        String filePath = accountFolder + account.getName() + " identity.jpg";
+//
+//        try (FileOutputStream fos = new FileOutputStream(filePath)) {
+//
+//            fos.write(identity);
+//        } catch (IOException e) {
+//            System.out.println("Error writing image file: " + e.getMessage());
+//            e.printStackTrace();
+//        }
+//    }
 }
 
 

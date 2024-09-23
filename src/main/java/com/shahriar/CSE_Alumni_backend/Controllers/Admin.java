@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 
 
@@ -34,10 +35,6 @@ public class Admin {
     public ResponseEntity<?> adminLogin(@RequestParam("email") String adminEmail,
                                         @RequestParam("password") String adminPassword) {
         System.out.println("Hit api");
-        //System.out.println("Trying to push github");
-
-//        String adminEmail = adminRequest.getAdminEmail();
-//        String adminPassword = adminRequest.getAdminPassword();
 
         if (regService.adminLogin(adminEmail, adminPassword)) {
 
@@ -54,8 +51,7 @@ public class Admin {
 
         LoginResponse errorResponse = new LoginResponse();
         errorResponse.setMessage("Email or Password is incorrect. Access denied. Please try again.");
-
-       // System.out.println(errorResponse);
+        
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
 
@@ -76,19 +72,21 @@ public class Admin {
     public ResponseEntity<?> getPendingRegistrations(@RequestBody TokenDto authorizationHeader) {
 
 
-       // System.out.println("Token is : "+authorizationHeader.getToken());
-
         if(new TokenValidation().isTokenValid(authorizationHeader.getToken())){
-            //System.out.println("Token is validated...");
+
             List<Register> pendingUsers = regService.getPendingUsers();
-                //System.out.println(pendingUsers.size());
+
+            String[] parts = authorizationHeader.getToken().split("_");
+
+            if(parts[1].equals("CUETCSE@admin.cuet.ac.bd")){
+
                 if (pendingUsers == null) {
                     return new ResponseEntity<>("No requests pending", HttpStatus.OK);
                 }
 
-                //saveImagesOfPendingRequest(pendingUsers);
-
                 return new ResponseEntity<>(pendingUsers, HttpStatus.OK);
+            }
+            return new ResponseEntity<>(pendingUsers, HttpStatus.UNAUTHORIZED);
         }
 
         return new ResponseEntity<>("Access denied...You are not logged in or token expired", HttpStatus.UNAUTHORIZED);
@@ -99,13 +97,16 @@ public class Admin {
     public ResponseEntity<String> approveAccount(@PathVariable String email, @RequestBody TokenDto auth) {
 
         if(new TokenValidation().isTokenValid(auth.getToken())){
+            String[] parts = auth.getToken().split("_");
+            if(parts[1].equals("CUETCSE@admin.cuet.ac.bd")){
+                if (regService.returnAdminStatus() == 1) {
+                    Register register = regService.approveRegistration(email);
 
-            if (regService.returnAdminStatus() == 1) {
-                Register register = regService.approveRegistration(email);
+                }
 
+                return new ResponseEntity<>("Registration approved", HttpStatus.OK);
             }
-
-            return new ResponseEntity<>("Registration approved", HttpStatus.OK);
+            return new ResponseEntity<>("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
 
         return new ResponseEntity<>("Access denied...login as admin first", HttpStatus.BAD_REQUEST);
@@ -116,13 +117,16 @@ public class Admin {
     public ResponseEntity<String> rejectAccount(@PathVariable String email, @RequestBody TokenDto auth) {
 
         if(new TokenValidation().isTokenValid(auth.getToken())) {
+            String[] parts = auth.getToken().split("_");
+            if(parts[1].equals("CUETCSE@admin.cuet.ac.bd")){
+                if (regService.returnAdminStatus() == 1) {
 
-            if (regService.returnAdminStatus() == 1) {
+                    Register register = regService.rejectRegistration(email);
 
-                Register register = regService.rejectRegistration(email);
-
-                return new ResponseEntity<>("Sorry!! You request has been rejected", HttpStatus.OK);
+                    return new ResponseEntity<>("Sorry!! You request has been rejected", HttpStatus.OK);
+                }
             }
+            return new ResponseEntity<>("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
 
         return new ResponseEntity<>("Access denied...login as admin first", HttpStatus.BAD_REQUEST);
@@ -133,12 +137,16 @@ public class Admin {
     public ResponseEntity<String> adminLogout(@RequestBody TokenDto auth) {
 
         if(new TokenValidation().isTokenValid(auth.getToken())){
+            String[] parts = auth.getToken().split("_");
 
-            if (regService.returnAdminStatus() == 1) {
+            if(parts[1].equals("CUETCSE@admin.cuet.ac.bd")){
+                if (regService.returnAdminStatus() == 1) {
 
-                regService.adminLogout();
-                return new ResponseEntity<>("Successfully log out as admin", HttpStatus.OK);
+                    regService.adminLogout();
+                    return new ResponseEntity<>("Successfully log out as admin", HttpStatus.OK);
+                }
             }
+            return new ResponseEntity<>("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
         return new ResponseEntity<>("You are trying to logout without login...login as admin first", HttpStatus.BAD_REQUEST);
     }

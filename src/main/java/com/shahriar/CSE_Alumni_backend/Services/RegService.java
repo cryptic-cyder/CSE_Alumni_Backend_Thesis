@@ -161,11 +161,9 @@ Exactly! You've got it. The getPasswordAuthentication() method is like your appl
     }*/
 
 
-
-
-
 package com.shahriar.CSE_Alumni_backend.Services;
 
+import com.shahriar.CSE_Alumni_backend.Controllers.RegController;
 import com.shahriar.CSE_Alumni_backend.Entities.*;
 import com.shahriar.CSE_Alumni_backend.Repos.RegRepoIF;
 import com.shahriar.CSE_Alumni_backend.Repos.TokenInterface;
@@ -173,6 +171,7 @@ import com.shahriar.CSE_Alumni_backend.Repos.UsertrackRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.batch.BatchProperties;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -208,10 +207,7 @@ public class RegService {
 
     public List<Register> performSearch(String queryToBeSearched) throws IOException {
 
-
-        List<Register> searchResults = regRepoIF.findByDescriptionContaining(queryToBeSearched);
-
-        return searchResults;
+        return regRepoIF.findByDescriptionContaining(queryToBeSearched);
     }
 
     public void sendEmail(String recipient, String subject, String body) {
@@ -228,14 +224,11 @@ public class RegService {
             javaMailSender.send(message);
 
             System.out.println("Mail sent successfully");
-        }
-        catch (MailException e) {
+        } catch (MailException e) {
 
             System.out.println("Failed to send email: " + e.getMessage());
         }
     }
-
-
 
 
     public Token saveToken(String email, String token, LocalDateTime timeout) {
@@ -252,39 +245,35 @@ public class RegService {
 
 
     public String requestForAcc(String name, String email, String password,
-                                MultipartFile identity,
+                                MultipartFile identity, MultipartFile NidOrBirthCertificate,
                                 UserStatus status) {
         try {
 
             byte[] identityBytes = (identity != null) ? (identity.getBytes()) : null;
-            //byte[] profilePicBytes = (profilePic != null) ? (profilePic.getBytes()) : null;
-
+            byte[] compressedImageBase64 = (NidOrBirthCertificate != null) ? (NidOrBirthCertificate.getBytes()) : null;
 
             Register register = Register.builder()
                     .name(name)
                     .email(email)
                     .password(password)
-                    //.studentId(studentId)
-                    //.graduationYear(graduationYear)
                     .identity(identityBytes)
-                    //.profilePic(profilePicBytes)
+                    .NidOrBirthCertificate(compressedImageBase64)
                     .userStatus(status)
                     .build();
 
             Register savedRegister = regRepoIF.save(register);
 
-            return (savedRegister != null) ? "Account is waiting for approval: " + email :
-                    "Error!!! Something went wrong... Account not created";
+            return "Account is waiting for approval: " + email;
         } catch (IOException e) {
-            e.printStackTrace(); // Log the exception
+
             return "Error!!! Something went wrong while processing the request";
         }
     }
 
 
-    public String updateAccount( String name, String updatedEmail, String password, MultipartFile profilePic,
-                                 MultipartFile identity,String studentId,
-                                 String graduationYear,String profStatus, String token
+    public String updateAccount(String name, String updatedEmail, String password, MultipartFile profilePic,
+                                MultipartFile identity, String studentId,
+                                String graduationYear, String profStatus, String about, String token
     ) {
         try {
 
@@ -297,14 +286,15 @@ public class RegService {
             byte[] profilePicBytes = profilePic != null ? profilePic.getBytes() : existingAccount.getProfilePic();
 
             // Update the fields with values from the request if they are not null, otherwise keep the existing values
-            existingAccount.setName(name!=null ? name : existingAccount.getName());
-            existingAccount.setEmail(updatedEmail!=null ? updatedEmail : existingAccount.getEmail());
-            existingAccount.setPassword(password!=null ? password : existingAccount.getPassword());
-            existingAccount.setProfDetails(profStatus!=null ? profStatus : existingAccount.getProfDetails());
+            existingAccount.setName(name != null ? name : existingAccount.getName());
+            existingAccount.setEmail(updatedEmail != null ? updatedEmail : existingAccount.getEmail());
+            existingAccount.setPassword(password != null ? password : existingAccount.getPassword());
+            existingAccount.setProfDetails(profStatus != null ? profStatus : existingAccount.getProfDetails());
 
 
-            existingAccount.setStudentId(studentId!=null ? studentId : existingAccount.getStudentId());
-            existingAccount.setGraduationYear(graduationYear!=null ? graduationYear : existingAccount.getGraduationYear());
+            existingAccount.setStudentId(studentId != null ? studentId : existingAccount.getStudentId());
+            existingAccount.setGraduationYear(graduationYear != null ? graduationYear : existingAccount.getGraduationYear());
+            existingAccount.setAbout(about != null ? about : existingAccount.getAbout());
             existingAccount.setIdentity(studentIdCardBytes);
             existingAccount.setProfilePic(profilePicBytes);
 
@@ -354,9 +344,7 @@ public class RegService {
         if (adminUserTrack == null)
             return -1;
 
-        int adminStatus = adminUserTrack.getStatus();
-
-        return adminStatus;
+        return adminUserTrack.getStatus();
     }
 
 
@@ -371,18 +359,20 @@ public class RegService {
     }
 
 
-
     public List<Register> getPendingUsers() {
 
         List<Register> existingRegister = regRepoIF.findByUserStatus(UserStatus.PENDING);
 
-        /*for(Register register: existingRegister){
-            if(register.getPVCPic()!=null)
-                System.out.println(register.getEmail());
-        }*/
+//        for (Register register : existingRegister) {
+//            if (register.getNidOrBirthCertificate() != null) {
+//                System.out.println("NidOrBirthCertificate (from DB): " + Arrays.toString(register.getNidOrBirthCertificate()));
+//            } else {
+//                System.out.println("NidOrBirthCertificate is null for user: " + register.getEmail());
+//            }
+//        }
 
 
-        if (existingRegister.size() == 0)
+        if (existingRegister.isEmpty())
             return new ArrayList<>();
 
         return existingRegister;
@@ -392,6 +382,7 @@ public class RegService {
 
     @Autowired
     private UsertrackRepo usertrackRepo;
+    private boolean flag=false;
 
     public Register approveRegistration(String email) {
 
@@ -410,11 +401,12 @@ public class RegService {
                 usertrackRepo.save(userTrack);
             }
 
+            flag = true;
             return regRepoIF.save(pendingAccFromDb);
         }
 
         // Handle the case where no record with the given userId is found
-        return new Register(); // Or throw an exception, return a specific response, etc.
+        return new Register();
     }
 
     public Register rejectRegistration(String email) {
@@ -422,11 +414,11 @@ public class RegService {
         Optional<Register> user = regRepoIF.findByEmail(email);
 
         if (user.isPresent()) {
-            //System.out.println("Okkkk");
+
             Register pendingAccFromDb = user.get();
 
             Register temp = pendingAccFromDb;
-            //System.out.println(temp.getEmail());
+
             //UserTrack userTrack = usertrackRepo.findByEmail(pendingAccFromDb.getEmail());
 
             //usertrackRepo.delete(userTrack);
@@ -478,18 +470,19 @@ public class RegService {
     }
 
 
+
+
     public List<Register> getAllRegisteredStudents() {
 
         List<Register> approvedAcc = regRepoIF.findByUserStatus(UserStatus.APPROVED);
 
-        if (approvedAcc.size() == 0)
+        if (approvedAcc.isEmpty()){
             return new ArrayList<>();
+        }
 
         return approvedAcc;
     }
 
-
-    //private String currentlyLoggedInUserEmail=null;
 
     public int login(String email, String password) {
 
@@ -524,76 +517,71 @@ public class RegService {
                 usertrackRepo.save(userTrack);
 
                 return 2;
-            }
-            else {
+            } else {
                 return 0;
             }
-        }
-        else{
+        } else {
             return 3;
         }
     }
 
 
-        public void logout (String token){
+    public void logout(String token) {
 
-            String emailFromToken = new TokenValidation().extractEmailFromToken(token);
+        String emailFromToken = new TokenValidation().extractEmailFromToken(token);
 
-            UserTrack userTrack = usertrackRepo.findByEmail(emailFromToken);
-            System.out.println(userTrack);
+        UserTrack userTrack = usertrackRepo.findByEmail(emailFromToken);
 
-            userTrack.setStatus(3);
-            usertrackRepo.save(userTrack);
+        userTrack.setStatus(3);
+        usertrackRepo.save(userTrack);
 
-            // Destroying Token
+        // Destroying Token
 
-            List<Token> expiredTokens = tokenInterface.findByEmail(emailFromToken);
-            if (!expiredTokens.isEmpty()) {
-                tokenInterface.deleteAll(expiredTokens);
-            }
-
-            //currentlyLoggedInUserEmail = null;
-        }
-
-
-        public UserTrack trackFindByEmail (String email){
-            return usertrackRepo.findByEmail(email);
-        }
-
-
-        public boolean adminLogin (String email, String password){
-
-            if (email.equals("CUETCSE@admin.cuet.ac.bd") && password.equals("1234")) {
-                //System.out.println("OKKKKKK");
-                if (!usertrackRepo.existsByEmail(email)) {
-                    UserTrack AdminUserTrack = UserTrack.builder()
-                            .email(email)
-                            .status(1)
-                            .build();
-
-                    usertrackRepo.save(AdminUserTrack);
-                } else {
-                    UserTrack adminUserTrack = usertrackRepo.findByEmail(email);
-                    adminUserTrack.setStatus(1);
-                    usertrackRepo.save(adminUserTrack);
-                }
-
-                return true;
-            }
-            return false;
-        }
-
-        public void adminLogout (){
-
-            UserTrack adminUserTrack = usertrackRepo.findByEmail("CUETCSE@admin.cuet.ac.bd");
-
-            adminUserTrack.setStatus(3);
-            usertrackRepo.save(adminUserTrack);
-
-            List<Token> expiredTokens = tokenInterface.findByEmail("CUETCSE@admin.cuet.ac.bd");
-            System.out.println("Expired tokens are : "+expiredTokens);
-            if (!expiredTokens.isEmpty()) {
-                tokenInterface.deleteAll(expiredTokens);
-            }
+        List<Token> expiredTokens = tokenInterface.findByEmail(emailFromToken);
+        if (!expiredTokens.isEmpty()) {
+            tokenInterface.deleteAll(expiredTokens);
         }
     }
+
+
+    public UserTrack trackFindByEmail(String email) {
+        return usertrackRepo.findByEmail(email);
+    }
+
+
+    public boolean adminLogin(String email, String password) {
+
+        if (email.equals("CUETCSE@admin.cuet.ac.bd") && password.equals("1234")) {
+
+            if (!usertrackRepo.existsByEmail(email)) {
+                UserTrack AdminUserTrack = UserTrack.builder()
+                        .email(email)
+                        .status(1)
+                        .build();
+
+                usertrackRepo.save(AdminUserTrack);
+            } else {
+                UserTrack adminUserTrack = usertrackRepo.findByEmail(email);
+                adminUserTrack.setStatus(1);
+                usertrackRepo.save(adminUserTrack);
+            }
+
+            return true;
+        }
+        return false;
+    }
+
+    public void adminLogout() {
+
+        UserTrack adminUserTrack = usertrackRepo.findByEmail("CUETCSE@admin.cuet.ac.bd");
+
+        adminUserTrack.setStatus(3);
+        usertrackRepo.save(adminUserTrack);
+
+        List<Token> expiredTokens = tokenInterface.findByEmail("CUETCSE@admin.cuet.ac.bd");
+        System.out.println("Expired tokens are : " + expiredTokens);
+        if (!expiredTokens.isEmpty()) {
+            tokenInterface.deleteAll(expiredTokens);
+        }
+    }
+}

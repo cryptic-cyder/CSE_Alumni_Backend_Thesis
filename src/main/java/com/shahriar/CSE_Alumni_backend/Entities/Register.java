@@ -56,6 +56,14 @@ public class Register {
     @Column(length = 10000000)
     private byte[] identity;
 
+    @Lob
+    @Column(length = 10000000)
+    private byte[] NidOrBirthCertificate;
+
+
+    @Column(length = 10000000)
+    private String about;
+
     private String profDetails;
 
 

@@ -1,17 +1,105 @@
+//        for (JobPost eachPost : postList) {
+//
+//            List<String> listOfBase64VersionOfEachImage = new ArrayList<>();
+//            List<byte[]> decodedImages = new ArrayList<>();
+//
+//            listOfBase64VersionOfEachImage = (eachPost.getImages() != null) ? eachPost.getImages() : null;
+//
+//            decodedImages = (listOfBase64VersionOfEachImage != null) ?
+//                    decodeImages(listOfBase64VersionOfEachImage) : null;
+//
+//            eachPost.setDecodedImages(decodedImages);
+//
+//            List<Comment> commentsOfThisPost = findAllCommentOfAnySpecificPost(eachPost.getId());
+//            eachPost.setComments(commentsOfThisPost);
+
+//            if(eachPost.getId()==1){
+//                for(Comment comment : commentsOfThisPost){
+//                    if(comment.getId()==1){
+//                        System.out.println(comment.getTextContent()+"\n"+comment.getResume());
+//                    }
+//                }
+//            }
+
+//jobPostInterface.save(eachPost);
+//}
+
+
+//            JobPost jobPost = jobPostOptional.get();
+//
+//            List<String> listOfBase64VersionOfEachImage = new ArrayList<>();
+//            List<byte[]> decodedImages = new ArrayList<>();
+//
+//            listOfBase64VersionOfEachImage = (jobPost.getImages() != null) ? jobPost.getImages() : null;
+//
+//            decodedImages = (listOfBase64VersionOfEachImage != null) ?
+//                    decodeImages(listOfBase64VersionOfEachImage) : null;
+//
+//            jobPost.setDecodedImages(decodedImages);
+//
+//            List<Comment> comments = findAllCommentOfAnySpecificPost(jobId);
+//            jobPost.setComments(comments);
+//
+//            return jobPost;
+
+//    public boolean verificationPostCreator(Long jobId, String userEmail) {
+//
+//        Optional<JobPost> jobPostOptional = jobPostInterface.findById(jobId);
+//
+//        if (!jobPostOptional.isPresent())
+//            return false;
+//
+//        JobPost specificJobPost = jobPostOptional.get();
+//
+//        if (userEmail.equals(specificJobPost.getUserEmail()))
+//            return true;
+//
+//        return false;
+//    }
+//
+//    public byte[] decompress(byte[] compressedBytes) throws IOException {
+//        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(compressedBytes))) {
+//            ZipEntry entry;
+//            while ((entry = zis.getNextEntry()) != null) {
+//                byte[] buffer = new byte[1024];
+//                int length;
+//                while ((length = zis.read(buffer)) > 0) {
+//                    bos.write(buffer, 0, length);
+//                }
+//            }
+//        }
+//        return bos.toByteArray(); // Assuming the resume is in string format
+//    }
+
+//    private List<byte[]> decodeImages(List<String> listOfBase64VersionOfEachImage) {
+//
+//        List<byte[]> decodedImages = new ArrayList<>();
+//
+//        for (String base64VersionOfEachImage : listOfBase64VersionOfEachImage) {
+//
+//            byte[] decodedImage = Base64.getDecoder().decode(base64VersionOfEachImage);
+//            decodedImages.add(decodedImage);
+//
+//        }
+//
+//        return decodedImages;
+//    }
+
+
+
+
+
+
 package com.shahriar.CSE_Alumni_backend.Services;
 
-
-import com.fasterxml.jackson.core.JsonToken;
 import com.shahriar.CSE_Alumni_backend.Entities.*;
 import com.shahriar.CSE_Alumni_backend.Repos.CommentInterface;
 import com.shahriar.CSE_Alumni_backend.Repos.JobPostInterface;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.batch.BatchProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import javax.naming.directory.SearchResult;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -20,9 +108,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 @Service
 public class JobPostService {
@@ -35,11 +120,7 @@ public class JobPostService {
 
     public List<JobPost> performSearch(String queryToBeSearched) throws IOException {
 
-        // Perform search in posts and comments
-        List<JobPost> searchResults = jobPostInterface.findByDescriptionContaining(queryToBeSearched);
-        //List<Comment> comments = commentInterface.findByTextContaining(query);
-
-        return searchResults;
+        return jobPostInterface.findByDescriptionContaining(queryToBeSearched);
     }
 
 
@@ -53,7 +134,8 @@ public class JobPostService {
 
             if (jobImagesData == null) {
                 compressedImagesBase64 = null;
-            } else {
+            }
+            else {
                 for (MultipartFile eachImage : jobImagesData) {
                     if (eachImage != null && !eachImage.isEmpty()) {
 
@@ -82,15 +164,15 @@ public class JobPostService {
 
             JobPost saveJobPost = jobPostInterface.save(jobpost);
 
-            return (saveJobPost != null) ? "Job is posted successfully" :
-                    "Error!!! Something went wrong... Job can not be posted...";
-        } catch (IOException e) {
-            e.printStackTrace(); // Log the exception
+            return "Job is posted successfully";
+        }
+        catch (IOException e) {
+
             return "Error!!! Something went wrong while processing the request";
         }
     }
 
-    private byte[] compressImage(byte[] imageData) throws IOException {
+    public byte[] compressImage(byte[] imageData) throws IOException {
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
@@ -103,110 +185,10 @@ public class JobPostService {
     }
 
 
-
-    public boolean verificationPostCreator(Long jobId, String userEmail) {
-
-        Optional<JobPost> jobPostOptional = jobPostInterface.findById(jobId);
-
-        if (!jobPostOptional.isPresent())
-            return false;
-
-        JobPost specificJobPost = jobPostOptional.get();
-
-        if (userEmail.equals(specificJobPost.getUserEmail()))
-            return true;
-
-        return false;
-    }
-
-    public byte[] decompress(byte[] compressedBytes) throws IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(compressedBytes))) {
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                byte[] buffer = new byte[1024];
-                int length;
-                while ((length = zis.read(buffer)) > 0) {
-                    bos.write(buffer, 0, length);
-                }
-            }
-        }
-        return bos.toByteArray(); // Assuming the resume is in string format
-    }
-
-
-
     public List<JobPost> getAllJobPost() throws IOException {
 
-
-        // Access the images field containing Base64-encoded strings
-       List<JobPost> jobPostList = jobPostInterface.findAll();
-
-       return jobPostList;
-
-
-//        for (JobPost eachPost : postList) {
-//
-//            List<String> listOfBase64VersionOfEachImage = new ArrayList<>();
-//            List<byte[]> decodedImages = new ArrayList<>();
-//
-//            listOfBase64VersionOfEachImage = (eachPost.getImages() != null) ? eachPost.getImages() : null;
-//
-//            decodedImages = (listOfBase64VersionOfEachImage != null) ?
-//                    decodeImages(listOfBase64VersionOfEachImage) : null;
-//
-//            eachPost.setDecodedImages(decodedImages);
-//
-//            List<Comment> commentsOfThisPost = findAllCommentOfAnySpecificPost(eachPost.getId());
-//            eachPost.setComments(commentsOfThisPost);
-
-//            if(eachPost.getId()==1){
-//                for(Comment comment : commentsOfThisPost){
-//                    if(comment.getId()==1){
-//                        System.out.println(comment.getTextContent()+"\n"+comment.getResume());
-//                    }
-//                }
-//            }
-
-           //jobPostInterface.save(eachPost);
-        //}
-
-
-
-
-
-//        List<JobPost> jobPostList = jobPostInterface.findAll();
-//        List<JobPostDTO> convertedPost = new ArrayList<>();
-//
-//        for(JobPost job:jobPostList) {
-//
-//            JobPostDTO jobPostDTO = convertToDTO(job);
-//            convertedPost.add(jobPostDTO);
-//        }
-//
-//        return convertedPost;
-//
-
+        return jobPostInterface.findAll();
     }
-
-//    private List<byte[]> decodeImages(List<String> listOfBase64VersionOfEachImage) {
-//
-//        List<byte[]> decodedImages = new ArrayList<>();
-//
-//        for (String base64VersionOfEachImage : listOfBase64VersionOfEachImage) {
-//
-//            byte[] decodedImage = Base64.getDecoder().decode(base64VersionOfEachImage);
-//            decodedImages.add(decodedImage);
-//
-//        }
-//
-//        return decodedImages;
-//    }
-
-
-
-
-
 
 
     public JobPost findAnySpecificJob(Long jobId) throws IOException {
@@ -214,26 +196,6 @@ public class JobPostService {
         Optional<JobPost> jobPostOptional = jobPostInterface.findById(jobId);
 
         return jobPostOptional.orElse(null);
-
-
-
-        //            JobPost jobPost = jobPostOptional.get();
-        //
-        //            List<String> listOfBase64VersionOfEachImage = new ArrayList<>();
-        //            List<byte[]> decodedImages = new ArrayList<>();
-        //
-        //            listOfBase64VersionOfEachImage = (jobPost.getImages() != null) ? jobPost.getImages() : null;
-        //
-        //            decodedImages = (listOfBase64VersionOfEachImage != null) ?
-        //                    decodeImages(listOfBase64VersionOfEachImage) : null;
-        //
-        //            jobPost.setDecodedImages(decodedImages);
-        //
-        //            List<Comment> comments = findAllCommentOfAnySpecificPost(jobId);
-        //            jobPost.setComments(comments);
-        //
-        //            return jobPost;
-
     }
 
 
@@ -246,7 +208,6 @@ public class JobPostService {
         }
 
         return postListOfAnyUser;
-
     }
 
 
@@ -258,7 +219,7 @@ public class JobPostService {
 
             Optional<JobPost> optionalJobPost = jobPostInterface.findById(postId);
 
-            if (!optionalJobPost.isPresent()) {
+            if (optionalJobPost.isEmpty()) {
                 return "Error!!! Job post with ID " + postId + " not found";
             }
 
@@ -290,10 +251,10 @@ public class JobPostService {
 
             JobPost updatedJobPost = jobPostInterface.save(jobPost);
 
-            return (updatedJobPost != null) ? "Job post updated successfully" :
-                    "Error!!! Something went wrong... Job post could not be updated";
-        } catch (IOException e) {
-            e.printStackTrace(); // Log the exception
+            return "Job post updated successfully";
+        }
+        catch (IOException e) {
+
             return "Error!!! Something went wrong while processing the request";
         }
     }
@@ -303,17 +264,21 @@ public class JobPostService {
         try {
 
             Optional<JobPost> optionalJobPost = jobPostInterface.findById(postId);
-            if (!optionalJobPost.isPresent()) {
+
+            if (optionalJobPost.isEmpty()) {
                 return "Error!!! Job post with ID " + postId + " not found";
             }
 
             jobPostInterface.deleteById(postId);
 
             return "Job post with ID " + postId + " deleted successfully";
-        } catch (Exception e) {
-            e.printStackTrace(); // Log the exception
+        }
+        catch (Exception e) {
             return "Error!!! Something went wrong while deleting the job post";
         }
 
     }
+
 }
+
+

@@ -54,6 +54,22 @@ public class CommentController {
     @Autowired
     private TokenInterface tokenInterface;
 
+    private String userEmail;
+
+    public boolean emailMatching(String token) {
+
+        String[] parts = token.split("_");
+        Long id = Long.parseLong(parts[3]);
+
+        Optional<Token> tokenFromDB = tokenInterface.findById(id);
+        String emailFromTokenDB = tokenFromDB.get().getEmail();
+        String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+
+        userEmail = emailFromBrowserToken;
+
+        return emailFromBrowserToken.equals(emailFromTokenDB);
+    }
+
     @PostMapping("/comment/{jobId}")
     public ResponseEntity<String> addCommentToJob(
             @PathVariable Long jobId,
@@ -66,7 +82,7 @@ public class CommentController {
 
         String token = auth.replace("Bearer", "");
 
-        if(new TokenValidation().isTokenValid(token)){
+        if (new TokenValidation().isTokenValid(token)) {
 
             try {
 
@@ -100,28 +116,16 @@ public class CommentController {
 
         String token = auth.replace("Bearer", "");
 
-        if(new TokenValidation().isTokenValid(token) ){
+        if (new TokenValidation().isTokenValid(token) & emailMatching(token)) {
 
-            String[] parts = token.split("_");
-            Long id = Long.parseLong(parts[3]);
+            List<Comment> comments = commentService.findAllCommentOfAnySpecificPost(jobId);
 
-            Optional<Token> tokenFromDB = tokenInterface.findById(id);
-            String emailFromTokenDB = tokenFromDB.get().getEmail();
-            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
-
-
-            if(emailFromBrowserToken.equals(emailFromTokenDB)){
-
-                List<Comment> comments = commentService.findAllCommentOfAnySpecificPost(jobId);
-
-                if (comments == null || comments.isEmpty()) {
-                    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-                }
-
-                return new ResponseEntity<>(comments, HttpStatus.OK);
+            if (comments == null || comments.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-        }
 
+            return new ResponseEntity<>(comments, HttpStatus.OK);
+        }
         return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
     }
 
@@ -130,10 +134,10 @@ public class CommentController {
             = "C:\\Users\\HP\\Desktop\\Intellij Spring boot\\CSE_Alumni_Backend_Thesis\\Resumes";
 
 
-    @GetMapping ("/pdf/{filename:.+}")
+    @GetMapping("/pdf/{filename:.+}")
     public ResponseEntity<Resource> getPdf(@PathVariable String filename) throws IOException {
 
-        System.out.println("FileName is : "+filename);
+        System.out.println("FileName is : " + filename);
 
         Path filePath = Paths.get(PDF_DIRECTORY).resolve(filename);
         Resource resource = new UrlResource(filePath.toUri());
@@ -149,18 +153,6 @@ public class CommentController {
             return ResponseEntity.notFound().build();
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 //    @PutMapping("/update/comment/{jobId}/{commentId}")
@@ -191,57 +183,36 @@ public class CommentController {
             @RequestHeader("Authorization") String auth
     ) {
 
-
-        System.out.println("Hit");
-
         LoginResponse response = new LoginResponse();
 
         String token = auth.replace("Bearer", "");
 
-        if (new TokenValidation().isTokenValid(token)) {
+        if (new TokenValidation().isTokenValid(token) && emailMatching(token)) {
 
-            //System.out.println("Token is valid...");
+            Comment comment = commentService.findComment(commentId);
+            String commentCreator = comment.getCommenter();
 
-            String[] parts = token.split("_");
-            Long id = Long.parseLong(parts[3]);
+            if (commentCreator.equals(userEmail)) {
 
-            Optional<Token> tokenFromDB = tokenInterface.findById(id);
-            String emailFromTokenDB = tokenFromDB.get().getEmail();
-            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+                String feedback = commentService.deleteComment(commentId);
 
-            if (emailFromBrowserToken.equals(emailFromTokenDB)){
-
-                //System.out.println("Email is same...");
-
-                Comment comment = commentService.findComment(commentId);
-                String commentCreator = comment.getCommenter();
-
-                //System.out.println("\n\n "+commentCreator+" "+emailFromBrowserToken+"\n\n");
-
-                if(commentCreator.equals(emailFromTokenDB)){
-
-                    String feedback = commentService.deleteComment(commentId);
-
-                    response.setMessage(feedback);
-                    response.setToken(null);
-
-                    return ResponseEntity.status(HttpStatus.OK).body(response);
-                }
-
-                //System.out.println("Not owner...");
-
-                response.setMessage("Token is expired...Or not the owner");
+                response.setMessage(feedback);
                 response.setToken(null);
 
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+                return ResponseEntity.status(HttpStatus.OK).body(response);
             }
+
+            response.setMessage("You are not the owner");
+            response.setToken(null);
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+
         }
 
-        response.setMessage("Token is expired...Or not the owner");
+        response.setMessage("Token is expired...Login again plz");
         response.setToken(null);
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-
     }
 
 //    public void saveFetchedResumes(List<Comment> allCommentOfAnyPost, Long jobId) {

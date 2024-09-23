@@ -1,42 +1,3 @@
-package com.shahriar.CSE_Alumni_backend.Services;
-
-import com.shahriar.CSE_Alumni_backend.Entities.Comment;
-import com.shahriar.CSE_Alumni_backend.Entities.JobPost;
-import com.shahriar.CSE_Alumni_backend.Repos.CommentInterface;
-import com.shahriar.CSE_Alumni_backend.Repos.JobPostInterface;
-import jakarta.servlet.http.HttpServletResponse;
-import net.coobird.thumbnailator.Thumbnails;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.batch.BatchProperties;
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.repository.query.FluentQuery;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import javax.swing.text.html.Option;
-import java.io.*;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.zip.*;
-
-import static org.apache.tomcat.util.codec.binary.Base64.decodeBase64;
-
-@Service
-public class CommentService {
-
-
-    @Autowired
-    private JobPostInterface jobPostInterface;
-
-    @Autowired
-    private CommentInterface commentInterface;
-
 //    private File convertMultiPartToFile(MultipartFile file) throws IOException {
 //
 //        File convertedFile = new File(file.getOriginalFilename());
@@ -71,51 +32,6 @@ public class CommentService {
 //        }
 //        return baos.toByteArray();
 //    }
-
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
-    public String addCommentToJob(Long jobId, String commenter, String textContent, String url) {
-
-        Optional<JobPost> jobPostOptional = jobPostInterface.findById(jobId);
-
-        if (jobPostOptional.isPresent()) {
-
-            JobPost jobPost = jobPostOptional.get();
-
-            Comment comment = new Comment();
-            comment.setCommenter(commenter);
-            comment.setTextContent(textContent);
-            comment.setUrl(url);
-            comment.setJobPost(jobPost);
-
-            commentInterface.save(comment);
-
-            return "Comment is added successfully...";
-        } else {
-            return "No such job post exists";
-        }
-
-    }
-
-
-    public List<Comment> findAllCommentOfAnySpecificPost(Long jobId) {
-        //System.out.println("Job post id : "+jobId);
-
-        Optional<JobPost> jobPostOptional = jobPostInterface.findById(jobId);
-
-        if (jobPostOptional.isPresent()) {
-            JobPost jobPost = jobPostOptional.get();
-            return jobPost.getComments();
-        }
-
-        return null;
-    }
-
-
-
-
-
 
 //        try {
 //
@@ -170,6 +86,86 @@ public class CommentService {
 
 
 
+
+package com.shahriar.CSE_Alumni_backend.Services;
+
+import com.shahriar.CSE_Alumni_backend.Entities.Comment;
+import com.shahriar.CSE_Alumni_backend.Entities.JobPost;
+import com.shahriar.CSE_Alumni_backend.Repos.CommentInterface;
+import com.shahriar.CSE_Alumni_backend.Repos.JobPostInterface;
+import jakarta.servlet.http.HttpServletResponse;
+import net.coobird.thumbnailator.Thumbnails;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.batch.BatchProperties;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.repository.query.FluentQuery;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.swing.text.html.Option;
+import java.io.*;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.zip.*;
+
+import static org.apache.tomcat.util.codec.binary.Base64.decodeBase64;
+
+@Service
+public class CommentService {
+
+
+    @Autowired
+    private JobPostInterface jobPostInterface;
+
+    @Autowired
+    private CommentInterface commentInterface;
+
+
+    @Value("${file.upload-dir}")
+    private String uploadDir;
+
+    public String addCommentToJob(Long jobId, String commenter, String textContent, String url) {
+
+        Optional<JobPost> jobPostOptional = jobPostInterface.findById(jobId);
+
+        if (jobPostOptional.isPresent()) {
+
+            JobPost jobPost = jobPostOptional.get();
+
+            Comment comment = new Comment();
+            comment.setCommenter(commenter);
+            comment.setTextContent(textContent);
+            comment.setUrl(url);
+            comment.setJobPost(jobPost);
+
+            commentInterface.save(comment);
+
+            return "Comment is added successfully...";
+        } else {
+            return "No such job post exists";
+        }
+
+    }
+
+
+    public List<Comment> findAllCommentOfAnySpecificPost(Long jobId) {
+        //System.out.println("Job post id : "+jobId);
+
+        Optional<JobPost> jobPostOptional = jobPostInterface.findById(jobId);
+
+        if (jobPostOptional.isPresent()) {
+            JobPost jobPost = jobPostOptional.get();
+            return jobPost.getComments();
+        }
+
+        return null;
+    }
 
 //    public String updateCommentToJob(Long jobId, Long commentId, String textContent, MultipartFile resume) {
 //
@@ -232,7 +228,6 @@ public class CommentService {
             if(commentInterface.findById(commentId).isPresent()){
 
                  comment = commentInterface.findById(commentId).get();
-
             }
             else{
                 return null;

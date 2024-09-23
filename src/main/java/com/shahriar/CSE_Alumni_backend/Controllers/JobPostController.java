@@ -19,6 +19,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @CrossOrigin(origins = "http://localhost:3000")
@@ -76,32 +77,19 @@ public class JobPostController {
 
         String token = auth.replace("Bearer", "");
 
-        if (new TokenValidation().isTokenValid(token)) {
-            String[] parts = token.split("_");
-            Long id = Long.parseLong(parts[3]);
+        if (new TokenValidation().isTokenValid(token) && emailMatching(token)) {
 
-            Optional<Token> tokenFromDB = tokenInterface.findById(id);
-            String emailFromTokenDB = tokenFromDB.get().getEmail();
-            String emailFromBrowserToken = new TokenValidation().extractEmailFromToken(token);
+            String query = payload.get("searchContent");
 
-            if (emailFromBrowserToken.equals(emailFromTokenDB)) {
+            List<JobPost> searchResults = jobPostService.performSearch(query);
 
-                String query = payload.get("searchContent");
-                System.out.println("Searched query is : " + query);
-
-                List<JobPost> searchResults = jobPostService.performSearch(query);
-
-                //System.out.println(searchResults.size());
-
-                if (searchResults == null) {
-                    return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-                }
-
-                //saveSearchResults(searchResults);
-
-                return new ResponseEntity<>(searchResults, HttpStatus.OK);
+            if (searchResults == null) {
+                return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
             }
 
+            //saveSearchResults(searchResults);
+
+            return new ResponseEntity<>(searchResults, HttpStatus.OK);
         }
 
         return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
@@ -172,25 +160,11 @@ public class JobPostController {
             //saveImagesAndResumesOfAnyUser(allJobPostOfAnyUser, userEmail);
 
             return new ResponseEntity<>(allJobPostOfAnyUser, HttpStatus.OK);
-
         }
 
         return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
     }
-//
-//    @GetMapping("/fetch/anyParticularJob/{jobId}")
-//    public ResponseEntity<?> fetchAnyParticularJob(@PathVariable Long jobId) throws IOException {
-//
-//        JobPost jobPost = jobPostService.findAnySpecificJob(jobId);
-//
-//        if (jobPost == null) {
-//            return new ResponseEntity<>("No such job post found", HttpStatus.NO_CONTENT);
-//        }
-//
-//        saveImagesInSystemForSpecificPost(jobPost);
-//        return new ResponseEntity<>(jobPost, HttpStatus.OK);
-//    }
-//
+
 
     // PUT methods
     @PostMapping("/updateJob/{postId}")
@@ -224,23 +198,31 @@ public class JobPostController {
 
         String token = auth.replace("Bearer", "");
 
-        if (new TokenValidation().isTokenValid(token) && emailMatching(token)) {
+        if(verification(postId, token).getStatusCode() == HttpStatus.OK){
 
-            JobPost jobPost = jobPostService.findAnySpecificJob(postId);
-            String postCreator = jobPost.getUserEmail();
+            String feedback = jobPostService.deleteJob(postId);
 
-            if (postCreator.equals(userEmail)) {
-
-                String feedback = jobPostService.deleteJob(postId);
-
-                return ResponseEntity.status(HttpStatus.OK).body(feedback);
-            }
-
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You aren't the post owner...");
+            return ResponseEntity.status(HttpStatus.OK).body(feedback);
         }
 
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not logged in...");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You aren't the post-owner or not logged in...");
     }
+
+
+
+
+    //    @GetMapping("/fetch/anyParticularJob/{jobId}")
+//    public ResponseEntity<?> fetchAnyParticularJob(@PathVariable Long jobId) throws IOException {
+//
+//        JobPost jobPost = jobPostService.findAnySpecificJob(jobId);
+//
+//        if (jobPost == null) {
+//            return new ResponseEntity<>("No such job post found", HttpStatus.NO_CONTENT);
+//        }
+//
+//        saveImagesInSystemForSpecificPost(jobPost);
+//        return new ResponseEntity<>(jobPost, HttpStatus.OK);
+//    }
 
 //    public void saveImagesInSystemForSpecificPost(JobPost jobPost) {
 //
